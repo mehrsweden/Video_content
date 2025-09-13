@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Hub - Admin Panel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Content Hub - Admin Panel</h1>
+                <a href="/" class="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded transition-colors">
+                    <i class="fas fa-eye mr-2"></i>View Site
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md">
+        <div class="container mx-auto px-6">
+            <div class="flex space-x-8 py-4">
+                <button id="videos-tab" class="nav-btn px-4 py-2 rounded font-semibold transition-all duration-300 bg-blue-500 text-white">
+                    <i class="fas fa-video mr-2"></i>Videos
+                </button>
+                <button id="texts-tab" class="nav-btn px-4 py-2 rounded font-semibold transition-all duration-300 text-gray-600 hover:text-blue-500">
+                    <i class="fas fa-file-text mr-2"></i>Articles
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Videos Management Section -->
+    <section id="videos-section" class="container mx-auto px-6 py-8">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold mb-4">Add New Video</h2>
+            <form id="video-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                    <input type="text" id="video-title" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Video URL *</label>
+                    <input type="url" id="video-url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Thumbnail URL</label>
+                    <input type="url" id="video-thumbnail" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Order Index</label>
+                    <input type="number" id="video-order" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="0">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="video-description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div class="md:col-span-2 flex items-center">
+                    <input type="checkbox" id="video-published" class="mr-2" checked>
+                    <label for="video-published" class="text-sm font-medium text-gray-700">Published</label>
+                </div>
+                <div class="md:col-span-2">
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Add Video
+                    </button>
+                    <button type="button" id="cancel-video-edit" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition-colors ml-2 hidden">
+                        Cancel Edit
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">Manage Videos</h2>
+            <div id="videos-list" class="space-y-4">
+                <!-- Videos will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Texts Management Section -->
+    <section id="texts-section" class="container mx-auto px-6 py-8 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold mb-4">Add New Article</h2>
+            <form id="text-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                        <input type="text" id="text-title" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Order Index</label>
+                        <input type="number" id="text-order" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="0">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Excerpt</label>
+                    <textarea id="text-excerpt" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Brief summary of the article"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Content *</label>
+                    <textarea id="text-content" rows="8" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="text-published" class="mr-2" checked>
+                    <label for="text-published" class="text-sm font-medium text-gray-700">Published</label>
+                </div>
+                <div>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Add Article
+                    </button>
+                    <button type="button" id="cancel-text-edit" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition-colors ml-2 hidden">
+                        Cancel Edit
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">Manage Articles</h2>
+            <div id="texts-list" class="space-y-4">
+                <!-- Texts will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Global variables
+        let currentVideos = [];
+        let currentTexts = [];
+        let editingVideoId = null;
+        let editingTextId = null;
+
+        // DOM elements
+        const videosTab = document.getElementById('videos-tab');
+        const textsTab = document.getElementById('texts-tab');
+        const videosSection = document.getElementById('videos-section');
+        const textsSection = document.getElementById('texts-section');
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVideos();
+            setupEventListeners();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            videosTab.addEventListener('click', () => switchTab('videos'));
+            textsTab.addEventListener('click', () => switchTab('texts'));
+            
+            document.getElementById('video-form').addEventListener('submit', handleVideoSubmit);
+            document.getElementById('text-form').addEventListener('submit', handleTextSubmit);
+            
+            document.getElementById('cancel-video-edit').addEventListener('click', cancelVideoEdit);
+            document.getElementById('cancel-text-edit').addEventListener('click', cancelTextEdit);
+        }
+
+        // Switch between tabs
+        function switchTab(tab) {
+            if (tab === 'videos') {
+                videosTab.classList.add('bg-blue-500', 'text-white');
+                videosTab.classList.remove('text-gray-600');
+                textsTab.classList.remove('bg-blue-500', 'text-white');
+                textsTab.classList.add('text-gray-600');
+                
+                videosSection.classList.remove('hidden');
+                textsSection.classList.add('hidden');
+                
+                if (currentVideos.length === 0) loadVideos();
+            } else {
+                textsTab.classList.add('bg-blue-500', 'text-white');
+                textsTab.classList.remove('text-gray-600');
+                videosTab.classList.remove('bg-blue-500', 'text-white');
+                videosTab.classList.add('text-gray-600');
+                
+                textsSection.classList.remove('hidden');
+                videosSection.classList.add('hidden');
+                
+                if (currentTexts.length === 0) loadTexts();
+            }
+        }
+
+        // Load videos from API
+        async function loadVideos() {
+            try {
+                const response = await fetch('/api/admin/videos');
+                const videos = await response.json();
+                currentVideos = videos;
+                renderVideosList(videos);
+            } catch (error) {
+                console.error('Error loading videos:', error);
+            }
+        }
+
+        // Load texts from API
+        async function loadTexts() {
+            try {
+                const response = await fetch('/api/admin/texts');
+                const texts = await response.json();
+                currentTexts = texts;
+                renderTextsList(texts);
+            } catch (error) {
+                console.error('Error loading texts:', error);
+            }
+        }
+
+        // Handle video form submission
+        async function handleVideoSubmit(e) {
+            e.preventDefault();
+            
+            const videoData = {
+                title: document.getElementById('video-title').value,
+                description: document.getElementById('video-description').value,
+                video_url: document.getElementById('video-url').value,
+                thumbnail_url: document.getElementById('video-thumbnail').value,
+                is_published: document.getElementById('video-published').checked,
+                order_index: parseInt(document.getElementById('video-order').value) || 0
+            };
+
+            try {
+                let response;
+                if (editingVideoId) {
+                    response = await fetch(`/api/videos/${editingVideoId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(videoData)
+                    });
+                } else {
+                    response = await fetch('/api/videos', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(videoData)
+                    });
+                }
+
+                if (response.ok) {
+                    document.getElementById('video-form').reset();
+                    document.getElementById('video-published').checked = true;
+                    cancelVideoEdit();
+                    loadVideos();
+                } else {
+                    alert('Error saving video');
+                }
+            } catch (error) {
+                console.error('Error saving video:', error);
+                alert('Error saving video');
+            }
+        }
+
+        // Handle text form submission
+        async function handleTextSubmit(e) {
+            e.preventDefault();
+            
+            const textData = {
+                title: document.getElementById('text-title').value,
+                content: document.getElementById('text-content').value,
+                excerpt: document.getElementById('text-excerpt').value,
+                is_published: document.getElementById('text-published').checked,
+                order_index: parseInt(document.getElementById('text-order').value) || 0
+            };
+
+            try {
+                let response;
+                if (editingTextId) {
+                    response = await fetch(`/api/texts/${editingTextId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(textData)
+                    });
+                } else {
+                    response = await fetch('/api/texts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(textData)
+                    });
+                }
+
+                if (response.ok) {
+                    document.getElementById('text-form').reset();
+                    document.getElementById('text-published').checked = true;
+                    cancelTextEdit();
+                    loadTexts();
+                } else {
+                    alert('Error saving article');
+                }
+            } catch (error) {
+                console.error('Error saving article:', error);
+                alert('Error saving article');
+            }
+        }
+
+        // Edit video
+        function editVideo(videoId) {
+            const video = currentVideos.find(v => v.id === videoId);
+            if (!video) return;
+
+            document.getElementById('video-title').value = video.title;
+            document.getElementById('video-description').value = video.description || '';
+            document.getElementById('video-url').value = video.video_url;
+            document.getElementById('video-thumbnail').value = video.thumbnail_url || '';
+            document.getElementById('video-published').checked = video.is_published;
+            document.getElementById('video-order').value = video.order_index;
+
+            editingVideoId = videoId;
+            document.getElementById('cancel-video-edit').classList.remove('hidden');
+            document.querySelector('#video-form button[type="submit"]').innerHTML = '<i class="fas fa-save mr-2"></i>Update Video';
+        }
+
+        // Cancel video edit
+        function cancelVideoEdit() {
+            editingVideoId = null;
+            document.getElementById('cancel-video-edit').classList.add('hidden');
+            document.querySelector('#video-form button[type="submit"]').innerHTML = '<i class="fas fa-plus mr-2"></i>Add Video';
+            document.getElementById('video-form').reset();
+            document.getElementById('video-published').checked = true;
+        }
+
+        // Edit text
+        function editText(textId) {
+            const text = currentTexts.find(t => t.id === textId);
+            if (!text) return;
+
+            document.getElementById('text-title').value = text.title;
+            document.getElementById('text-content').value = text.content;
+            document.getElementById('text-excerpt').value = text.excerpt || '';
+            document.getElementById('text-published').checked = text.is_published;
+            document.getElementById('text-order').value = text.order_index;
+
+            editingTextId = textId;
+            document.getElementById('cancel-text-edit').classList.remove('hidden');
+            document.querySelector('#text-form button[type="submit"]').innerHTML = '<i class="fas fa-save mr-2"></i>Update Article';
+        }
+
+        // Cancel text edit
+        function cancelTextEdit() {
+            editingTextId = null;
+            document.getElementById('cancel-text-edit').classList.add('hidden');
+            document.querySelector('#text-form button[type="submit"]').innerHTML = '<i class="fas fa-plus mr-2"></i>Add Article';
+            document.getElementById('text-form').reset();
+            document.getElementById('text-published').checked = true;
+        }
+
+        // Delete video
+        async function deleteVideo(videoId) {
+            if (!confirm('Are you sure you want to delete this video?')) return;
+
+            try {
+                const response = await fetch(`/api/videos/${videoId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadVideos();
+                } else {
+                    alert('Error deleting video');
+                }
+            } catch (error) {
+                console.error('Error deleting video:', error);
+                alert('Error deleting video');
+            }
+        }
+
+        // Delete text
+        async function deleteText(textId) {
+            if (!confirm('Are you sure you want to delete this article?')) return;
+
+            try {
+                const response = await fetch(`/api/texts/${textId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadTexts();
+                } else {
+                    alert('Error deleting article');
+                }
+            } catch (error) {
+                console.error('Error deleting article:', error);
+                alert('Error deleting article');
+            }
+        }
+
+        // Render videos list
+        function renderVideosList(videos) {
+            const videosList = document.getElementById('videos-list');
+            
+            if (videos.length === 0) {
+                videosList.innerHTML = '<p class="text-gray-500 text-center py-8">No videos found</p>';
+                return;
+            }
+
+            videosList.innerHTML = videos.map(video => `
+                <div class="border border-gray-200 rounded-lg p-4 fade-in">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-800">${video.title}</h3>
+                            <p class="text-gray-600 text-sm mt-1">${video.description || 'No description'}</p>
+                            <div class="flex items-center mt-2 space-x-4 text-sm text-gray-500">
+                                <span><i class="fas fa-calendar mr-1"></i>${new Date(video.created_at).toLocaleDateString()}</span>
+                                <span><i class="fas fa-sort-numeric-up mr-1"></i>Order: ${video.order_index}</span>
+                                <span class="px-2 py-1 rounded text-xs ${video.is_published ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${video.is_published ? 'Published' : 'Draft'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="editVideo(${video.id})" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteVideo(${video.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render texts list
+        function renderTextsList(texts) {
+            const textsList = document.getElementById('texts-list');
+            
+            if (texts.length === 0) {
+                textsList.innerHTML = '<p class="text-gray-500 text-center py-8">No articles found</p>';
+                return;
+            }
+
+            textsList.innerHTML = texts.map(text => `
+                <div class="border border-gray-200 rounded-lg p-4 fade-in">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-800">${text.title}</h3>
+                            <p class="text-gray-600 text-sm mt-1">${text.excerpt || text.content.substring(0, 100) + '...'}</p>
+                            <div class="flex items-center mt-2 space-x-4 text-sm text-gray-500">
+                                <span><i class="fas fa-calendar mr-1"></i>${new Date(text.created_at).toLocaleDateString()}</span>
+                                <span><i class="fas fa-sort-numeric-up mr-1"></i>Order: ${text.order_index}</span>
+                                <span class="px-2 py-1 rounded text-xs ${text.is_published ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${text.is_published ? 'Published' : 'Draft'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="editText(${text.id})" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteText(${text.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
