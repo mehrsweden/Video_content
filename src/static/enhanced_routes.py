@@ -249,4 +249,21 @@ def get_admin_texts():
         } for text in texts]), 200
     except Exception as e:
         print(f"Error fetching admin texts: {e}")
+        @upload_bp.route('/api/files/<filename>', methods=['DELETE'])
+def delete_file(filename):
+    """Delete an uploaded file"""
+    try:
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+        file_path = os.path.join(upload_folder, filename)
+        
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return jsonify({'message': 'File deleted successfully'}), 200
+        else:
+            return jsonify({'error': 'File not found'}), 404
+            
+    except Exception as e:
+        print(f"Error deleting file: {e}")
+        return jsonify({'error': 'Failed to delete file'}), 500
+
         return jsonify({'error': 'Failed to fetch texts'}), 500
