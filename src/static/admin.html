@@ -368,34 +368,44 @@ async function uploadFile(file) {
             }
         }
 
-        // Load files
-        async function loadFiles() {
-            try {
-                const response = await fetch('/api/files');
-                const files = await response.json();
-                
-                const filesList = document.getElementById('files-list');
-                if (files.length === 0) {
-                    filesList.innerHTML = '<p class="text-gray-500">No files uploaded</p>';
-                    return;
-                }
-
-                filesList.innerHTML = files.map(file => `
-                    <div class="border border-gray-200 rounded-lg p-4">
-                        <div class="text-center">
-                            <i class="fas fa-file text-2xl text-gray-400 mb-2"></i>
-                            <h4 class="font-semibold text-sm">${file.name}</h4>
-                            <p class="text-xs text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                            <button onclick="copyUrl('${file.url}')" class="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-2">
-                                Copy URL
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                document.getElementById('files-list').innerHTML = '<p class="text-red-500">Error loading files</p>';
-            }
+       // Load files
+async function loadFiles() {
+    try {
+        const response = await fetch('/api/files');
+        const files = await response.json();
+        
+        const filesList = document.getElementById('files-list');
+        if (files.length === 0) {
+            filesList.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">No files uploaded</p>';
+            return;
         }
+
+        filesList.innerHTML = files.map(file => `
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div class="text-center">
+                    <i class="fas ${getFileIcon(file.type)} text-3xl text-gray-400 mb-3"></i>
+                    <h4 class="font-semibold text-sm mb-1 truncate" title="${file.name}">${file.name}</h4>
+                    <p class="text-xs text-gray-500 mb-3">${formatFileSize(file.size)}</p>
+                    <p class="text-xs text-gray-400 mb-3">${new Date(file.uploaded_at).toLocaleDateString()}</p>
+                    
+                    <div class="space-y-2">
+                        <button onclick="copyUrl('${file.url}')" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition-colors">
+                            <i class="fas fa-copy mr-1"></i>Copy URL
+                        </button>
+                        <button onclick="previewFile('${file.url}', '${file.type}')" class="w-full bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs transition-colors">
+                            <i class="fas fa-eye mr-1"></i>Preview
+                        </button>
+                        <button onclick="deleteFile('${file.name}')" class="w-full bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs transition-colors">
+                            <i class="fas fa-trash mr-1"></i>Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        document.getElementById('files-list').innerHTML = '<p class="text-red-500 col-span-full text-center py-8">Error loading files</p>';
+    }
+}
 
         // Delete video
         async function deleteVideo(id) {
@@ -440,6 +450,61 @@ async function uploadFile(file) {
         document.addEventListener('DOMContentLoaded', function() {
             loadVideos();
         });
+        // Delete file
+async function deleteFile(filename) {
+    if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+    
+    try {
+        const response = await fetch(`/api/files/${encodeURIComponent(filename)}`, { 
+            method: 'DELETE' 
+        });
+        
+        if (response.ok) {
+            alert('File deleted successfully!');
+            loadFiles(); // Reload the file list
+        } else {
+            const error = await response.json();
+            alert(`Error deleting file: ${error.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        alert('Error deleting file. Please try again.');
+        console.error('Delete error:', error);
+    }
+}
+
+// Preview file
+function previewFile(url, type) {
+    if (type.startsWith('video/')) {
+        // Open video in new tab
+        window.open(url, '_blank');
+    } else if (type.startsWith('image/')) {
+        // Open image in new tab
+        window.open(url, '_blank');
+    } else {
+        // For other files, just open the URL
+        window.open(url, '_blank');
+    }
+}
+
+// Get file icon based on type
+function getFileIcon(type) {
+    if (type.startsWith('video/')) return 'fa-video';
+    if (type.startsWith('image/')) return 'fa-image';
+    if (type.includes('pdf')) return 'fa-file-pdf';
+    if (type.includes('word') || type.includes('document')) return 'fa-file-word';
+    if (type.includes('text')) return 'fa-file-text';
+    return 'fa-file';
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
     </script>
 </body>
 </html>
