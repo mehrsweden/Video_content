@@ -194,7 +194,7 @@
             if (section === 'files') loadFiles();
         }
 
-      // Upload file
+    // Upload file
 async function uploadFile(file) {
     if (!file) return;
     
@@ -216,15 +216,26 @@ async function uploadFile(file) {
         
         if (response.ok) {
             const result = await response.json();
-            messageSpan.textContent = `Upload successful! URL: ${result.url}`;
-            document.getElementById('video-url').value = result.url;
+            messageSpan.textContent = `Upload successful! File ready to use.`;
+            
+            // Automatically fill the video URL field
+            const videoUrlField = document.getElementById('video-url');
+            videoUrlField.value = result.url;
+            
+            // Change the field color to show it's filled
+            videoUrlField.style.backgroundColor = '#f0fff4';
+            videoUrlField.style.borderColor = '#10b981';
+            
+            console.log('Video URL set to:', result.url);
         } else {
             messageSpan.textContent = 'Upload failed. Please try again.';
         }
     } catch (error) {
+        console.error('Upload error:', error);
         messageSpan.textContent = 'Upload error. Please try again.';
     }
 }
+
 
 
         // Add video
