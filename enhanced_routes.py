@@ -234,7 +234,45 @@ def get_admin_videos():
     except Exception as e:
         print(f"Error fetching admin videos: {e}")
         return jsonify({'error': 'Failed to fetch videos'}), 500
-
+        def generate_video_thumbnail(video_path, thumbnail_path):
+    """Generate thumbnail from video file"""
+    try:
+        # Open video file
+        cap = cv2.VideoCapture(video_path)
+        
+        # Get total frames
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        # Go to middle frame for better thumbnail
+        middle_frame = total_frames // 2
+        cap.set(cv2.CAP_PROP_POS_FRAMES, middle_frame)
+        
+        # Read frame
+        ret, frame = cap.read()
+        
+        if ret:
+            # Convert BGR to RGB
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            
+            # Convert to PIL Image
+            pil_image = Image.fromarray(frame_rgb)
+            
+            # Resize to thumbnail size (320x180 for 16:9 aspect ratio)
+            pil_image.thumbnail((320, 180), Image.Resampling.LANCZOS)
+            
+            # Save as JPEG
+            pil_image.save(thumbnail_path, 'JPEG', quality=85)
+            
+            cap.release()
+            return True
+        else:
+            cap.release()
+            return False
+            
+    except Exception as e:
+        print(f"Error generating thumbnail: {e}")
+        return False
+        
 @content_enhanced_bp.route('/api/admin/texts', methods=['GET'])
 def get_admin_texts():
     """Get all texts for admin (including unpublished)"""
