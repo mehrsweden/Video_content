@@ -529,23 +529,28 @@ function handleVideoFileSelect(e) {
             }
         }
 
-        // Handle video form submission
-        async function handleVideoSubmit(e) {
-            e.preventDefault();
-            
-            const source = document.querySelector('input[name="video-source"]:checked').value;
-            let videoUrl = '';
-            
-            if (source === 'url') {
-                videoUrl = document.getElementById('video-url').value;
-            } else {
-                // For uploaded files, the URL should already be set by the upload handler
-                videoUrl = document.getElementById('video-url').value;
-                if (!videoUrl) {
-                    alert('Please upload a video file first');
-                    return;
-                }
-            }
+       // Handle video form submission
+async function handleVideoSubmit(e) {
+    e.preventDefault();
+    
+    const source = document.querySelector('input[name="video-source"]:checked').value;
+    let videoUrl = '';
+    
+    if (source === 'url') {
+        videoUrl = document.getElementById('video-url').value;
+        if (!videoUrl) {
+            alert('Please enter a video URL');
+            return;
+        }
+    } else {
+        // For uploaded files, get URL from the form data attribute or input field
+        videoUrl = document.getElementById('video-form').getAttribute('data-uploaded-url') || 
+                  document.getElementById('video-url').value;
+        if (!videoUrl) {
+            alert('Please upload a video file first');
+            return;
+        }
+    }
 
             const videoData = {
                 title: document.getElementById('video-title').value,
