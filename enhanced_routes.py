@@ -136,13 +136,22 @@ def upload_file():
         
         # Generate unique filename
         filename = generate_unique_filename(file.filename)
-        file_path = os.path.join(upload_path, filename)
+               file_path = os.path.join(upload_path, filename)
         
         # Save the file
         file.save(file_path)
         
         # Generate URL for the file
         file_url = f"/static/{UPLOAD_FOLDER}/{filename}"
+        
+        # Generate thumbnail for videos
+        thumbnail_url = None
+        if file_type == 'video':
+            thumbnail_filename = f"{filename.rsplit('.', 1)[0]}_thumb.jpg"
+            thumbnail_path = os.path.join(upload_path, thumbnail_filename)
+            
+            if generate_video_thumbnail(file_path, thumbnail_path):
+                thumbnail_url = f"/static/{UPLOAD_FOLDER}/{thumbnail_filename}"
         
         response_data = {
             'url': file_url,
@@ -152,12 +161,10 @@ def upload_file():
             'type': file.content_type or mimetypes.guess_type(filename)[0]
         }
         
-        # If it's a document, extract text
-        if file_type == 'document':
-            extracted_text = extract_document_text(file_path, file.filename)
-            if extracted_text:
-                response_data['extractedText'] = extracted_text
-        
+        # Add thumbnail URL if generated
+        if thumbnail_url:
+            response_data['thumbnail_url'] = thumbnail_url
+
         return jsonify(response_data), 200
         
     except Exception as e:
