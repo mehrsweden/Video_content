@@ -317,20 +317,27 @@
         }
 
         // Handle video file selection
-        function handleVideoFileSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        // Handle video file selection
+function handleVideoFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-            if (file.size > 500 * 1024 * 1024) { // 500MB limit
-                alert('File size must be less than 500MB');
-                return;
-            }
+    if (file.size > 500 * 1024 * 1024) { // 500MB limit
+        alert('File size must be less than 500MB');
+        return;
+    }
 
-            uploadFile(file, 'video', (url) => {
-                document.getElementById('video-url').value = url;
-                showUploadSuccess('video-drop-zone', 'Video uploaded successfully!');
-            });
-        }
+    uploadFile(file, 'video', (url) => {
+        // Set the video URL in the hidden URL field
+        document.getElementById('video-url').value = url;
+        
+        // Also store it in a data attribute for form submission
+        document.getElementById('video-form').setAttribute('data-uploaded-url', url);
+        
+        showUploadSuccess('video-drop-zone', 'Video uploaded successfully!');
+    });
+}
+
 
         // Handle thumbnail file selection
         function handleThumbnailFileSelect(e) {
