@@ -250,13 +250,33 @@ def index():
         </body>
         </html>
         '''
-
 @app.route('/admin.html')
 def admin():
+    # Check for password protection
+    admin_password = request.args.get('password')
+    correct_password = os.environ.get('ADMIN_PASSWORD', 'defaultpassword')
+    
+    if admin_password != correct_password:
+        return '''
+        <!DOCTYPE html>
+        <html>
+        <head><title>Admin Access Required</title></head>
+        <body style="text-align:center; padding:50px; font-family:Arial;">
+            <h2>Admin Access Required</h2>
+            <form method="GET">
+                <input type="password" name="password" placeholder="Enter admin password" required style="padding:10px; margin:10px;">
+                <br>
+                <button type="submit" style="padding:10px 20px; margin:10px;">Access Admin Panel</button>
+            </form>
+        </body>
+        </html>
+        '''
+    
+    # If password is correct, show admin panel
     try:
         return send_from_directory(app.static_folder, 'admin.html')
     except Exception as e:
-        status = "Supabase Connected ✅" if supabase_available else "Supabase Disconnected ❌"
+        status = "Supabase Connected" if supabase_available else "Supabase Error"
         return f'''
         <!DOCTYPE html>
         <html>
@@ -267,11 +287,7 @@ def admin():
         </body>
         </html>
         '''
-          try:
-        return send_from_directory(app.static_folder, 'admin.html')
-    except:
-        return '<h1>Admin Panel</h1><p>Admin interface loading...</p>'
-
+        
 @app.route('/health')
 def health():
     return jsonify({
