@@ -267,6 +267,10 @@ def admin():
         </body>
         </html>
         '''
+          try:
+        return send_from_directory(app.static_folder, 'admin.html')
+    except:
+        return '<h1>Admin Panel</h1><p>Admin interface loading...</p>'
 
 @app.route('/health')
 def health():
