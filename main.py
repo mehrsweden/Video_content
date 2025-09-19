@@ -1,0 +1,383 @@
+import os
+import uuid
+import mimetypes
+from datetime import datetime
+from flask import Flask, request, jsonify, send_from_directory
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.utils import secure_filename
+
+# Initialize Flask app
+app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+# Configuration
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback-secret-key')
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
+
+# Database configuration
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize database
+db = SQLAlchemy(app)
+
+# Database Models
+class VideoContent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    video_url = db.Column(db.String(500), nullable=False)
+    thumbnail_url = db.Column(db.String(500))
+    is_published = db.Column(db.Boolean, default=True)
+    order_index = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class TextContent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    excerpt = db.Column(db.Text)
+    is_published = db.Column(db.Boolean, default=True)
+    order_index = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# File configuration
+ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'wmv', 'flv', 'mkv', 'webm', 'm4v'}
+ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'}
+ALLOWED_DOCUMENT_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'rtf', 'md', 'odt'}
+
+def allowed_file(filename, file_type):
+    if '.' not in filename:
+        return False
+    extension = filename.rsplit('.', 1)[1].lower()
+    if file_type == 'video':
+        return extension in ALLOWED_VIDEO_EXTENSIONS
+    elif file_type == 'image':
+        return extension in ALLOWED_IMAGE_EXTENSIONS
+    elif file_type == 'document':
+        return extension in ALLOWED_DOCUMENT_EXTENSIONS
+    return False
+
+def generate_unique_filename(filename):
+    name, ext = os.path.splitext(secure_filename(filename))
+    unique_id = str(uuid.uuid4())[:8]
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    return f"{name}_{timestamp}_{unique_id}{ext}"
+
+# Supabase functions (will be implemented after app starts)
+def upload_to_supabase(file_data, filename, content_type):
+    """Upload file to Supabase - placeholder for now"""
+    print(f"Would upload {filename} to Supabase")
+    return f"https://placeholder-url.com/{filename}"
+
+def list_supabase_files():
+    """List Supabase files - placeholder for now"""
+    return []
+
+def delete_from_supabase(filename):
+    """Delete from Supabase - placeholder for now"""
+    print(f"Would delete {filename} from Supabase")
+    return True
+
+# Routes
+@app.route('/')
+def index():
+    try:
+        return send_from_directory(app.static_folder, 'index.html')
+    except Exception as e:
+        return f'''
+        <!DOCTYPE html>
+        <html>
+        <head><title>Content Hub</title></head>
+        <body>
+            <h1>Content Hub</h1>
+            <p>Welcome to your content management system!</p>
+            <p>Status: App is running (Supabase integration pending)</p>
+            <a href="/admin.html">Go to Admin Panel</a>
+            <br><br>
+            <small>Debug: {str(e)}</small>
+        </body>
+        </html>
+        '''
+
+@app.route('/admin.html')
+def admin():
+    try:
+        return send_from_directory(app.static_folder, 'admin.html')
+    except Exception as e:
+        return f'''
+        <!DOCTYPE html>
+        <html>
+        <head><title>Admin Panel</title></head>
+        <body>
+            <h1>Admin Panel</h1>
+            <p>Admin interface loading...</p>
+            <small>Debug: {str(e)}</small>
+        </body>
+        </html>
+        '''
+
+@app.route('/health')
+def health():
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.utcnow().isoformat(),
+        'database': 'connected',
+        'supabase': 'pending_implementation'
+    })
+
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        file_type = request.form.get('type', 'video')
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not allowed_file(file.filename, file_type):
+            return jsonify({'error': f'File type not allowed for {file_type}'}), 400
+        
+        # Read file data
+        file_data = file.read()
+        filename = generate_unique_filename(file.filename)
+        content_type = file.content_type or mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+        
+        # Placeholder upload (will be replaced with real Supabase)
+        file_url = upload_to_supabase(file_data, filename, content_type)
+
+        response_data = {
+            'url': file_url,
+            'filename': filename,
+            'original_name': file.filename,
+            'size': len(file_data),
+            'type': content_type,
+            'thumbnail_url': None,
+            'note': 'Placeholder upload - Supabase integration pending'
+        }
+        
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        print(f"Upload error: {e}")
+        return jsonify({'error': 'Upload failed', 'details': str(e)}), 500
+
+@app.route('/api/files', methods=['GET'])
+def list_files():
+    try:
+        files = list_supabase_files()
+        return jsonify(files), 200
+    except Exception as e:
+        print(f"Error listing files: {e}")
+        return jsonify({'error': 'Failed to list files'}), 500
+
+@app.route('/api/files/<filename>', methods=['DELETE'])
+def delete_file(filename):
+    try:
+        if delete_from_supabase(secure_filename(filename)):
+            return jsonify({'message': 'File deleted successfully'}), 200
+        else:
+            return jsonify({'error': 'File not found'}), 404
+    except Exception as e:
+        print(f"Error deleting file: {e}")
+        return jsonify({'error': 'Failed to delete file'}), 500
+
+@app.route('/api/videos', methods=['GET', 'POST'])
+def videos():
+    try:
+        if request.method == 'GET':
+            videos = VideoContent.query.filter_by(is_published=True).order_by(VideoContent.order_index.desc()).all()
+            return jsonify([{
+                'id': v.id,
+                'title': v.title,
+                'description': v.description,
+                'video_url': v.video_url,
+                'thumbnail_url': v.thumbnail_url,
+                'created_at': v.created_at.isoformat()
+            } for v in videos])
+        
+        elif request.method == 'POST':
+            data = request.get_json()
+            video = VideoContent(
+                title=data['title'],
+                description=data.get('description'),
+                video_url=data['video_url'],
+                thumbnail_url=data.get('thumbnail_url'),
+                is_published=data.get('is_published', True),
+                order_index=data.get('order_index', 0)
+            )
+            db.session.add(video)
+            db.session.commit()
+            return jsonify({'message': 'Video created successfully'}), 201
+    except Exception as e:
+        print(f"Videos API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/videos', methods=['GET'])
+def admin_videos():
+    try:
+        videos = VideoContent.query.order_by(VideoContent.order_index.desc()).all()
+        return jsonify([{
+            'id': v.id,
+            'title': v.title,
+            'description': v.description,
+            'video_url': v.video_url,
+            'thumbnail_url': v.thumbnail_url,
+            'is_published': v.is_published,
+            'order_index': v.order_index,
+            'created_at': v.created_at.isoformat()
+        } for v in videos])
+    except Exception as e:
+        print(f"Admin videos error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/videos/<int:video_id>', methods=['GET', 'PUT', 'DELETE'])
+def manage_video(video_id):
+    try:
+        video = VideoContent.query.get_or_404(video_id)
+        
+        if request.method == 'GET':
+            return jsonify({
+                'id': video.id,
+                'title': video.title,
+                'description': video.description,
+                'video_url': video.video_url,
+                'thumbnail_url': video.thumbnail_url,
+                'is_published': video.is_published,
+                'order_index': video.order_index,
+                'created_at': video.created_at.isoformat()
+            })
+        
+        elif request.method == 'PUT':
+            data = request.get_json()
+            video.title = data.get('title', video.title)
+            video.description = data.get('description', video.description)
+            video.video_url = data.get('video_url', video.video_url)
+            video.thumbnail_url = data.get('thumbnail_url', video.thumbnail_url)
+            video.is_published = data.get('is_published', video.is_published)
+            video.order_index = data.get('order_index', video.order_index)
+            db.session.commit()
+            return jsonify({'message': 'Video updated successfully'})
+        
+        elif request.method == 'DELETE':
+            db.session.delete(video)
+            db.session.commit()
+            return jsonify({'message': 'Video deleted successfully'})
+            
+    except Exception as e:
+        print(f"Manage video error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/texts', methods=['GET', 'POST'])
+def texts():
+    try:
+        if request.method == 'GET':
+            texts = TextContent.query.filter_by(is_published=True).order_by(TextContent.order_index.desc()).all()
+            return jsonify([{
+                'id': t.id,
+                'title': t.title,
+                'content': t.content,
+                'excerpt': t.excerpt,
+                'created_at': t.created_at.isoformat()
+            } for t in texts])
+        
+        elif request.method == 'POST':
+            data = request.get_json()
+            text = TextContent(
+                title=data['title'],
+                content=data['content'],
+                excerpt=data.get('excerpt'),
+                is_published=data.get('is_published', True),
+                order_index=data.get('order_index', 0)
+            )
+            db.session.add(text)
+            db.session.commit()
+            return jsonify({'message': 'Text created successfully'}), 201
+    except Exception as e:
+        print(f"Texts API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/texts', methods=['GET'])
+def admin_texts():
+    try:
+        texts = TextContent.query.order_by(TextContent.order_index.desc()).all()
+        return jsonify([{
+            'id': t.id,
+            'title': t.title,
+            'content': t.content,
+            'excerpt': t.excerpt,
+            'is_published': t.is_published,
+            'order_index': t.order_index,
+            'created_at': t.created_at.isoformat()
+        } for t in texts])
+    except Exception as e:
+        print(f"Admin texts error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/texts/<int:text_id>', methods=['GET', 'PUT', 'DELETE'])
+def manage_text(text_id):
+    try:
+        text = TextContent.query.get_or_404(text_id)
+        
+        if request.method == 'GET':
+            return jsonify({
+                'id': text.id,
+                'title': text.title,
+                'content': text.content,
+                'excerpt': text.excerpt,
+                'is_published': text.is_published,
+                'order_index': text.order_index,
+                'created_at': text.created_at.isoformat()
+            })
+        
+        elif request.method == 'PUT':
+            data = request.get_json()
+            text.title = data.get('title', text.title)
+            text.content = data.get('content', text.content)
+            text.excerpt = data.get('excerpt', text.excerpt)
+            text.is_published = data.get('is_published', text.is_published)
+            text.order_index = data.get('order_index', text.order_index)
+            db.session.commit()
+            return jsonify({'message': 'Text updated successfully'})
+        
+        elif request.method == 'DELETE':
+            db.session.delete(text)
+            db.session.commit()
+            return jsonify({'message': 'Text deleted successfully'})
+            
+    except Exception as e:
+        print(f"Manage text error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.errorhandler(413)
+def too_large(e):
+    return jsonify({'error': 'File is too large. Maximum size is 500MB.'}), 413
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({'error': 'Not found'}), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return jsonify({'error': 'Internal server error'}), 500
+
+# Initialize database
+with app.app_context():
+    try:
+        db.create_all()
+        print("Database tables created successfully")
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
