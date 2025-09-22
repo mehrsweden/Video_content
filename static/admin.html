@@ -660,6 +660,7 @@ function cancelTextEdit() {
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing admin panel...');
             loadVideos();
             setupEventListeners();
             setupFileUpload();
@@ -681,14 +682,10 @@ function cancelTextEdit() {
             document.getElementById('cancel-video-edit').addEventListener('click', cancelVideoEdit);
             document.getElementById('cancel-text-edit').addEventListener('click', cancelTextEdit);
             document.getElementById('cancel-document-edit').addEventListener('click', cancelDocumentEdit);
-
-            // Thumbnail preview
             document.getElementById('video-thumbnail').addEventListener('input', updateThumbnailPreview);
         }
 
-        // Setup file upload functionality
         function setupFileUpload() {
-            // Video upload in video section
             setupDropZone('video-drop-zone', 'video-file-input', 'video', handleVideoFileUpload);
             
             // Document upload in document section
@@ -868,7 +865,7 @@ function cancelTextEdit() {
 
         // Switch between tabs
         function switchTab(tab) {
-            // Reset all tabs
+            console.log('Switching to tab:', tab);
             [videosTab, textsTab, documentsTab, filesTab].forEach(t => {
                 t.classList.remove('bg-blue-500', 'text-white');
                 t.classList.add('text-gray-600');
