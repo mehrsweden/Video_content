@@ -919,49 +919,74 @@
             `).join('');
         }
 
-        function renderTextsList(texts) {
-            const textsList = document.getElementById('texts-list');
-            
-            if (texts.length === 0) {
-                textsList.innerHTML = '<p class="text-gray-500 text-center py-8">No articles added yet.</p>';
-                return;
-            }
+  function renderTextsList(texts) {
+    const textsList = document.getElementById('texts-list');
+    
+    if (texts.length === 0) {
+        textsList.innerHTML = '<p class="text-gray-500 text-center py-8">No articles added yet.</p>';
+        return;
+    }
 
-            textsList.innerHTML = texts.map(text => `
-                <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex-1">
-                            <h3 class="font-semibold text-lg">${text.title}</h3>
-                            <p class="text-gray-600 text-sm">${text.excerpt || 'No excerpt'}</p>
-                        </div>
-                        <div class="flex space-x-2 ml-4">
-                            <button onclick="editText(${text.id})" class="text-blue-500 hover:text-blue-700">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="deleteText(${text.id})" class="text-red-500 hover:text-red-700">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-4 text-sm text-gray-500">
-                        <span class="flex items-center">
-                            <i class="fas fa-sort-numeric-up mr-1"></i>
-                            Order: ${text.order_index}
-                        </span>
-                        <span class="flex items-center">
-                            <i class="fas fa-${text.is_published ? 'eye' : 'eye-slash'} mr-1"></i>
-                            ${text.is_published ? 'Published' : 'Draft'}
-                        </span>
-                        <span class="flex items-center">
-                            <i class="fas fa-calendar mr-1"></i>
-                            ${new Date(text.created_at).toLocaleDateString()}
-                        </span>
-                    </div>
+    textsList.innerHTML = texts.map(text => `
+        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex-1">
+                    <h3 class="font-semibold text-lg">${text.title}</h3>
+                    <p class="text-gray-600 text-sm">${text.excerpt || 'No excerpt'}</p>
                 </div>
-            `).join('');
-        }
+                <div class="flex space-x-2 ml-4">
+                    <button onclick="editText(${text.id})" class="text-blue-500 hover:text-blue-700" title="Edit Article">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="downloadArticle(${text.id})" class="text-green-500 hover:text-green-700" title="Download as Text File">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button onclick="deleteText(${text.id})" class="text-red-500 hover:text-red-700" title="Delete Article">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4 text-sm text-gray-500">
+                <span class="flex items-center">
+                    <i class="fas fa-sort-numeric-up mr-1"></i>
+                    Order: ${text.order_index}
+                </span>
+                <span class="flex items-center">
+                    <i class="fas fa-${text.is_published ? 'eye' : 'eye-slash'} mr-1"></i>
+                    ${text.is_published ? 'Published' : 'Draft'}
+                </span>
+                <span class="flex items-center">
+                    <i class="fas fa-calendar mr-1"></i>
+                    ${new Date(text.created_at).toLocaleDateString()}
+                </span>
+            </div>
+            <div class="mt-3 text-sm text-gray-600">
+                <p>${text.content.length > 100 ? text.content.substring(0, 100) + '...' : text.content}</p>
+            </div>
+        </div>
+    `).join('');
+}
 
-        // Copy URL to clipboard
+// Add this new function at the end of your admin.html script section
+function downloadArticle(articleId) {
+    try {
+        const downloadUrl = `/api/download/article/${articleId}`;
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = '';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        console.log('Article download started!');
+    } catch (error) {
+        console.error('Download error:', error);
+        alert('Download failed. Please try again.');
+    }
+}    
+                    
+    // Copy URL to clipboard
         function copyToClipboard(url) {
             navigator.clipboard.writeText(url).then(() => {
                 const button = event.target.closest('button');
