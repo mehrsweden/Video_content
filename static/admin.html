@@ -667,6 +667,8 @@ function cancelTextEdit() {
 
         // Setup event listeners
         function setupEventListeners() {
+             setupArticleFileUpload();
+}
             videosTab.addEventListener('click', () => switchTab('videos'));
             textsTab.addEventListener('click', () => switchTab('texts'));
             documentsTab.addEventListener('click', () => switchTab('documents'));
