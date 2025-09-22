@@ -1,0 +1,876 @@
+import os
+import uuid
+import mimetypes
+import tempfile
+import requests
+from datetime import datetime
+from flask import Flask, request, jsonify, send_from_directory, redirect, Response
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.utils import secure_filename
+
+# Initialize Flask app
+app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+# Configuration
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback-secret-key')
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
+
+# Supabase configuration
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY') 
+SUPABASE_BUCKET = os.environ.get('SUPABASE_BUCKET', 'videos')
+
+print("=== SUPABASE CONFIG ===")
+print(f"URL: {'SET' if SUPABASE_URL else 'MISSING'}")
+print(f"KEY: {'SET' if SUPABASE_KEY else 'MISSING'}")
+print(f"BUCKET: {SUPABASE_BUCKET}")
+
+# Test Supabase connection
+supabase_available = False
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        test_url = f"{SUPABASE_URL}/storage/v1/bucket"
+        headers = {
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json"
+        }
+        response = requests.get(test_url, headers=headers, timeout=10)
+        if response.status_code in [200, 401, 403]:
+            supabase_available = True
+            print("✅ Supabase HTTP connection successful")
+        else:
+            print(f"❌ Supabase HTTP test failed: {response.status_code}")
+    except Exception as e:
+        print(f"❌ Supabase HTTP test error: {e}")
+else:
+    print("❌ Missing Supabase credentials")
+
+print(f"Supabase available: {supabase_available}")
+
+# Database configuration for Heroku
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize database
+db = SQLAlchemy(app)
+
+# Database Models
+class VideoContent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    video_url = db.Column(db.String(500), nullable=False)
+    thumbnail_url = db.Column(db.String(500))
+    is_published = db.Column(db.Boolean, default=True)
+    order_index = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class TextContent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    excerpt = db.Column(db.Text)
+    is_published = db.Column(db.Boolean, default=True)
+    order_index = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Document(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    file_url = db.Column(db.String(500), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    file_type = db.Column(db.String(100))
+    file_size = db.Column(db.Integer)
+    is_published = db.Column(db.Boolean, default=True)
+    download_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# File configuration
+ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'wmv', 'flv', 'mkv', 'webm', 'm4v'}
+ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'}
+ALLOWED_DOCUMENT_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'rtf', 'md', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar'}
+
+def allowed_file(filename, file_type):
+    if '.' not in filename:
+        return False
+    extension = filename.rsplit('.', 1)[1].lower()
+    if file_type == 'video':
+        return extension in ALLOWED_VIDEO_EXTENSIONS
+    elif file_type == 'image':
+        return extension in ALLOWED_IMAGE_EXTENSIONS
+    elif file_type == 'document':
+        return extension in ALLOWED_DOCUMENT_EXTENSIONS
+    return False
+
+def generate_unique_filename(filename):
+    name, ext = os.path.splitext(secure_filename(filename))
+    unique_id = str(uuid.uuid4())[:8]
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    return f"{name}_{timestamp}_{unique_id}{ext}"
+
+def get_file_icon(file_type):
+    """Return appropriate icon class for file type"""
+    if not file_type:
+        return 'fas fa-file'
+    
+    file_type = file_type.lower()
+    if 'pdf' in file_type:
+        return 'fas fa-file-pdf'
+    elif any(word in file_type for word in ['word', 'doc']):
+        return 'fas fa-file-word'
+    elif any(word in file_type for word in ['excel', 'sheet', 'xls']):
+        return 'fas fa-file-excel'
+    elif any(word in file_type for word in ['powerpoint', 'presentation', 'ppt']):
+        return 'fas fa-file-powerpoint'
+    elif any(word in file_type for word in ['zip', 'rar', 'archive']):
+        return 'fas fa-file-archive'
+    elif any(word in file_type for word in ['text', 'txt']):
+        return 'fas fa-file-alt'
+    else:
+        return 'fas fa-file'
+
+def upload_to_supabase_http(file_data, filename, content_type):
+    """Upload file to Supabase using direct HTTP requests"""
+    if not supabase_available:
+        print("❌ Supabase not available")
+        return None
+    
+    try:
+        print(f"📤 Uploading {filename} via HTTP...")
+        
+        upload_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{filename}"
+        
+        headers = {
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": content_type,
+        }
+        
+        response = requests.post(upload_url, data=file_data, headers=headers, timeout=300)
+        
+        print(f"📊 Upload response: {response.status_code}")
+        
+        if response.status_code == 200:
+            public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{filename}"
+            print(f"✅ Upload successful: {public_url}")
+            return public_url
+        else:
+            print(f"❌ Upload failed: {response.status_code} - {response.text}")
+            return None
+            
+    except Exception as e:
+        print(f"❌ HTTP upload error: {e}")
+        return None
+
+def generate_thumbnail_http(video_data, original_filename):
+    """Generate thumbnail and upload via HTTP"""
+    if not supabase_available:
+        return None
+    
+    try:
+        import cv2
+        import numpy as np
+        
+        print(f"🖼️ Generating thumbnail for {original_filename}...")
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_video:
+            temp_video.write(video_data)
+            temp_video_path = temp_video.name
+
+        vidcap = cv2.VideoCapture(temp_video_path)
+        success, image = vidcap.read()
+        
+        if success:
+            base_name = os.path.splitext(original_filename)[0]
+            thumbnail_filename = f"{base_name}_thumb.jpg"
+            
+            _, buffer = cv2.imencode('.jpg', image)
+            thumbnail_data = buffer.tobytes()
+            
+            thumbnail_url = upload_to_supabase_http(thumbnail_data, thumbnail_filename, "image/jpeg")
+            
+            vidcap.release()
+            os.unlink(temp_video_path)
+            return thumbnail_url
+        
+        vidcap.release()
+        os.unlink(temp_video_path)
+        return None
+        
+    except ImportError:
+        print("❌ OpenCV not available for thumbnails")
+        return None
+    except Exception as e:
+        print(f"❌ Thumbnail error: {e}")
+        return None
+
+def list_supabase_files_http():
+    """List files using HTTP requests"""
+    if not supabase_available:
+        return []
+    
+    try:
+        list_url = f"{SUPABASE_URL}/storage/v1/object/list/{SUPABASE_BUCKET}"
+        headers = {"Authorization": f"Bearer {SUPABASE_KEY}"}
+        
+        response = requests.post(list_url, headers=headers, json={})
+        
+        if response.status_code == 200:
+            files = []
+            for file_info in response.json():
+                public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{file_info['name']}"
+                files.append({
+                    'name': file_info['name'],
+                    'url': public_url,
+                    'size': file_info.get('metadata', {}).get('size', 0),
+                    'type': file_info.get('metadata', {}).get('mimetype', 'application/octet-stream'),
+                    'created': file_info.get('created_at', datetime.utcnow().isoformat())
+                })
+            return files
+        return []
+    except Exception as e:
+        print(f"❌ List files error: {e}")
+        return []
+
+def delete_file_http(filename):
+    """Delete file using HTTP requests"""
+    if not supabase_available:
+        return False
+    
+    try:
+        delete_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{filename}"
+        headers = {"Authorization": f"Bearer {SUPABASE_KEY}"}
+        
+        response = requests.delete(delete_url, headers=headers)
+        return response.status_code == 200
+    except Exception as e:
+        print(f"❌ Delete error: {e}")
+        return False
+
+# Routes
+@app.route('/')
+def index():
+            status = "Supabase Connected" if supabase_available else "Supabase Disconnected"
+        status_class = "success" if supabase_available else "error"
+    try:
+        return send_from_directory(app.static_folder, 'index.html')
+    except:
+        return f'''
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Content Hub</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }}
+                .card {{ border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 8px; }}
+                .btn {{ background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 5px; }}
+                .status {{ padding: 10px; border-radius: 4px; margin: 10px 0; }}
+                .success {{ background: #d4edda; color: #155724; }}
+                .error {{ background: #f8d7da; color: #721c24; }}
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1>Content Hub</h1>
+                <div class="status {status_class}">
+                    Status: {status}
+                </div>
+                <p>Welcome to your content management system!</p>
+                <a href="/admin.html" class="btn">Go to Admin Panel</a>
+                <a href="/documents" class="btn">View Documents</a>
+                <a href="/health" class="btn">Health Check</a>
+            </div>
+        </body>
+        </html>
+        '''
+
+@app.route('/admin.html')
+def admin():
+    # Password protection
+    admin_password = request.args.get('password')
+    correct_password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+    
+    if admin_password != correct_password:
+        return '''
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Admin Access Required</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+                .login-box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+                input { padding: 12px; margin: 10px; width: 200px; border: 1px solid #ddd; border-radius: 4px; }
+                button { padding: 12px 24px; margin: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+                button:hover { background: #0056b3; }
+            </style>
+        </head>
+        <body>
+            <div class="login-box">
+                <h2>Admin Access Required</h2>
+                <form method="GET">
+                    <br><input type="password" name="password" placeholder="Enter admin password" required>
+                    <br><button type="submit">Access Admin Panel</button>
+                </form>
+            </div>
+        </body>
+        </html>
+        '''
+    
+    status = "Connected" if supabase_available else "Disconnected"
+    try:
+        return send_from_directory(app.static_folder, 'admin.html')
+    except:
+        return f'''
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Admin Panel</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }}
+                .nav {{ background: #f8f9fa; padding: 15px; margin-bottom: 20px; border-radius: 8px; }}
+                .nav a {{ margin-right: 15px; text-decoration: none; color: #007bff; }}
+                .section {{ border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 8px; }}
+            </style>
+        </head>
+        <body>
+            <div class="nav">
+                <a href="/">← Back to Home</a>
+                <a href="/health">Health Check</a>
+                <a href="/api/admin/videos">Videos API</a>
+                <a href="/api/admin/texts">Texts API</a>
+                <a href="/api/admin/documents">Documents API</a>
+            </div>
+            
+            <div class="section">
+                <h2>System Status</h2>
+                <p>Supabase: {status}</p>
+            </div>
+            
+            <div class="section">
+                <h2>Quick Actions</h2>
+                <p>Use the API endpoints to manage content:</p>
+                <ul>
+                    <li><strong>GET /api/videos</strong> - List published videos</li>
+                    <li><strong>GET /api/texts</strong> - List published texts</li>
+                    <li><strong>GET /api/documents</strong> - List published documents</li>
+                    <li><strong>POST /api/upload</strong> - Upload files</li>
+                    <li><strong>GET /api/files</strong> - List uploaded files</li>
+                </ul>
+            </div>
+        </body>
+        </html>
+        '''
+
+@app.route('/documents')
+def public_documents():
+    """Public page to view and download documents"""
+    try:
+        documents = Document.query.filter_by(is_published=True).order_by(Document.created_at.desc()).all()
+        
+        doc_list = ""
+        for doc in documents:
+            icon = get_file_icon(doc.file_type)
+            size_mb = round(doc.file_size / (1024*1024), 2) if doc.file_size else 0
+            doc_list += f'''
+            <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background: white;">
+                <h3><i class="{icon}" style="margin-right: 10px; color: #007bff;"></i>{doc.title}</h3>
+                <p>{doc.description or 'No description available'}</p>
+                <p><small>Size: {size_mb} MB | Downloads: {doc.download_count} | Added: {doc.created_at.strftime('%Y-%m-%d')}</small></p>
+                <a href="/download/{doc.id}" style="background: #007bff; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px; display: inline-block;">
+                    <i class="fas fa-download"></i> Download
+                </a>
+            </div>
+            '''
+        
+        if not doc_list:
+            doc_list = "<div style='text-align: center; padding: 50px; color: #666;'><p>No documents available for download.</p></div>"
+            
+        return f'''
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Documents - Content Hub</title>
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+            <style>
+                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }}
+                h1 {{ color: #333; text-align: center; }}
+                .header {{ background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1><i class="fas fa-file-download"></i> Available Documents</h1>
+                <a href="/" style="color: #007bff; text-decoration: none;">← Back to Home</a>
+            </div>
+            {doc_list}
+        </body>
+        </html>
+        '''
+    except Exception as e:
+        return f"<h1>Error loading documents</h1><p>{str(e)}</p>"
+
+@app.route('/download/<int:doc_id>')
+def download_document(doc_id):
+    """Handle document downloads and track download count"""
+    try:
+        document = Document.query.get_or_404(doc_id)
+        
+        if not document.is_published:
+            return "Document not available", 404
+        
+        # Increment download count
+        document.download_count += 1
+        db.session.commit()
+        
+        # Redirect to the actual file URL in Supabase
+        return redirect(document.file_url)
+        
+    except Exception as e:
+        return f"Error downloading document: {str(e)}", 500
+
+@app.route('/api/download/article/<int:article_id>')
+def download_article(article_id):
+    """Download article as text file"""
+    try:
+        article = TextContent.query.get_or_404(article_id)
+        
+        content = f"""{article.title}
+{'=' * len(article.title)}
+
+{f"{article.excerpt}\n\n" if article.excerpt else ""}{article.content}
+
+---
+Created: {article.created_at.strftime('%Y-%m-%d %H:%M:%S')}
+Article ID: {article.id}
+Order Index: {article.order_index}
+Published: {'Yes' if article.is_published else 'No'}
+"""
+        
+        safe_title = "".join(c for c in article.title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        safe_title = safe_title.replace(' ', '_').lower()[:50]
+        filename = f"{safe_title}_{article.id}.txt"
+        
+        return Response(
+            content,
+            mimetype='text/plain',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"',
+                'Content-Type': 'text/plain; charset=utf-8'
+            }
+        )
+        
+    except Exception as e:
+        print(f"Download article error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/health')
+def health():
+    try:
+        # Test database connection
+        db.session.execute('SELECT 1')
+        db_status = 'connected'
+    except Exception as e:
+        db_status = f'error: {str(e)}'
+    
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.utcnow().isoformat(),
+        'database': db_status,
+        'supabase': {
+            'available': supabase_available,
+            'method': 'direct_http',
+            'bucket': SUPABASE_BUCKET,
+            'url_configured': bool(SUPABASE_URL),
+            'key_configured': bool(SUPABASE_KEY)
+        },
+        'features': {
+            'article_download': 'enabled',
+            'video_upload': 'enabled',
+            'file_management': 'enabled',
+            'document_management': 'enabled'
+        }
+    })
+
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        file_type = request.form.get('type', 'video')
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not allowed_file(file.filename, file_type):
+            return jsonify({'error': f'File type not allowed for {file_type}'}), 400
+        
+        file_data = file.read()
+        filename = generate_unique_filename(file.filename)
+        content_type = file.content_type or mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+        
+        print(f"📁 Processing: {file.filename} -> {filename}")
+        print(f"📊 Size: {len(file_data)} bytes")
+        
+        # Upload using HTTP
+        file_url = upload_to_supabase_http(file_data, filename, content_type)
+        
+        if not file_url:
+            return jsonify({
+                'error': 'Failed to upload to Supabase',
+                'supabase_available': supabase_available,
+                'method': 'direct_http'
+            }), 500
+        
+        # Generate thumbnail for videos
+        thumbnail_url = None
+        if file_type == 'video':
+            thumbnail_url = generate_thumbnail_http(file_data, filename)
+
+        response_data = {
+            'url': file_url,
+            'filename': filename,
+            'original_name': file.filename,
+            'size': len(file_data),
+            'type': content_type,
+            'thumbnail_url': thumbnail_url,
+            'method': 'http_upload'
+        }
+        
+        print(f"✅ Upload complete: {file_url}")
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        print(f"❌ Upload error: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'error': 'Upload failed', 'details': str(e)}), 500
+
+# Document API endpoints
+@app.route('/api/documents', methods=['GET', 'POST'])
+def documents_api():
+    try:
+        if request.method == 'GET':
+            documents = Document.query.filter_by(is_published=True).order_by(Document.created_at.desc()).all()
+            return jsonify([{
+                'id': d.id,
+                'title': d.title,
+                'description': d.description,
+                'file_url': d.file_url,
+                'filename': d.filename,
+                'file_type': d.file_type,
+                'file_size': d.file_size,
+                'download_count': d.download_count,
+                'created_at': d.created_at.isoformat(),
+                'icon': get_file_icon(d.file_type)
+            } for d in documents])
+        
+        elif request.method == 'POST':
+            data = request.get_json()
+            document = Document(
+                title=data['title'],
+                description=data.get('description'),
+                file_url=data['file_url'],
+                filename=data['filename'],
+                file_type=data.get('file_type'),
+                file_size=data.get('file_size'),
+                is_published=data.get('is_published', True)
+            )
+            db.session.add(document)
+            db.session.commit()
+            return jsonify({'message': 'Document created successfully', 'id': document.id}), 201
+    except Exception as e:
+        print(f"❌ Documents API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/documents', methods=['GET'])
+def admin_documents():
+    try:
+        documents = Document.query.order_by(Document.created_at.desc()).all()
+        return jsonify([{
+            'id': d.id,
+            'title': d.title,
+            'description': d.description,
+            'file_url': d.file_url,
+            'filename': d.filename,
+            'file_type': d.file_type,
+            'file_size': d.file_size,
+            'is_published': d.is_published,
+            'download_count': d.download_count,
+            'created_at': d.created_at.isoformat(),
+            'icon': get_file_icon(d.file_type)
+        } for d in documents])
+    except Exception as e:
+        print(f"❌ Admin documents error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/documents/<int:doc_id>', methods=['GET', 'PUT', 'DELETE'])
+def manage_document(doc_id):
+    try:
+        document = Document.query.get_or_404(doc_id)
+        
+        if request.method == 'GET':
+            return jsonify({
+                'id': document.id,
+                'title': document.title,
+                'description': document.description,
+                'file_url': document.file_url,
+                'filename': document.filename,
+                'file_type': document.file_type,
+                'file_size': document.file_size,
+                'is_published': document.is_published,
+                'download_count': document.download_count,
+                'created_at': document.created_at.isoformat()
+            })
+        
+        elif request.method == 'PUT':
+            data = request.get_json()
+            document.title = data.get('title', document.title)
+            document.description = data.get('description', document.description)
+            document.is_published = data.get('is_published', document.is_published)
+            db.session.commit()
+            return jsonify({'message': 'Document updated successfully'})
+        
+        elif request.method == 'DELETE':
+            # Delete file from Supabase
+            filename = document.filename
+            delete_file_http(filename)
+            
+            db.session.delete(document)
+            db.session.commit()
+            return jsonify({'message': 'Document deleted successfully'})
+            
+    except Exception as e:
+        print(f"❌ Manage document error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/files', methods=['GET'])
+def list_files():
+    try:
+        files = list_supabase_files_http()
+        files.sort(key=lambda x: x.get('created', ''), reverse=True)
+        return jsonify(files), 200
+    except Exception as e:
+        print(f"❌ List files error: {e}")
+        return jsonify({'error': 'Failed to list files'}), 500
+
+@app.route('/api/files/<filename>', methods=['DELETE'])
+def delete_file(filename):
+    try:
+        if delete_file_http(secure_filename(filename)):
+            return jsonify({'message': 'File deleted successfully'}), 200
+        else:
+            return jsonify({'error': 'File not found'}), 404
+    except Exception as e:
+        print(f"❌ Delete error: {e}")
+        return jsonify({'error': 'Failed to delete file'}), 500
+
+# Video API endpoints
+@app.route('/api/videos', methods=['GET', 'POST'])
+def videos():
+    try:
+        if request.method == 'GET':
+            videos = VideoContent.query.filter_by(is_published=True).order_by(VideoContent.order_index.desc()).all()
+            return jsonify([{
+                'id': v.id,
+                'title': v.title,
+                'description': v.description,
+                'video_url': v.video_url,
+                'thumbnail_url': v.thumbnail_url,
+                'created_at': v.created_at.isoformat()
+            } for v in videos])
+        
+        elif request.method == 'POST':
+            data = request.get_json()
+            video = VideoContent(
+                title=data['title'],
+                description=data.get('description'),
+                video_url=data['video_url'],
+                thumbnail_url=data.get('thumbnail_url'),
+                is_published=data.get('is_published', True),
+                order_index=data.get('order_index', 0)
+            )
+            db.session.add(video)
+            db.session.commit()
+            return jsonify({'message': 'Video created successfully', 'id': video.id}), 201
+    except Exception as e:
+        print(f"❌ Videos API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/videos', methods=['GET'])
+def admin_videos():
+    try:
+        videos = VideoContent.query.order_by(VideoContent.order_index.desc()).all()
+        return jsonify([{
+            'id': v.id,
+            'title': v.title,
+            'description': v.description,
+            'video_url': v.video_url,
+            'thumbnail_url': v.thumbnail_url,
+            'is_published': v.is_published,
+            'order_index': v.order_index,
+            'created_at': v.created_at.isoformat()
+        } for v in videos])
+    except Exception as e:
+        print(f"❌ Admin videos error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/videos/<int:video_id>', methods=['GET', 'PUT', 'DELETE'])
+def manage_video(video_id):
+    try:
+        video = VideoContent.query.get_or_404(video_id)
+        
+        if request.method == 'GET':
+            return jsonify({
+                'id': video.id,
+                'title': video.title,
+                'description': video.description,
+                'video_url': video.video_url,
+                'thumbnail_url': video.thumbnail_url,
+                'is_published': video.is_published,
+                'order_index': video.order_index,
+                'created_at': video.created_at.isoformat()
+            })
+        
+        elif request.method == 'PUT':
+            data = request.get_json()
+            video.title = data.get('title', video.title)
+            video.description = data.get('description', video.description)
+            video.video_url = data.get('video_url', video.video_url)
+            video.thumbnail_url = data.get('thumbnail_url', video.thumbnail_url)
+            video.is_published = data.get('is_published', video.is_published)
+            video.order_index = data.get('order_index', video.order_index)
+            db.session.commit()
+            return jsonify({'message': 'Video updated successfully'})
+        
+        elif request.method == 'DELETE':
+            db.session.delete(video)
+            db.session.commit()
+            return jsonify({'message': 'Video deleted successfully'})
+            
+    except Exception as e:
+        print(f"❌ Manage video error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# Text content API endpoints
+@app.route('/api/texts', methods=['GET', 'POST'])
+def texts():
+    try:
+        if request.method == 'GET':
+            texts = TextContent.query.filter_by(is_published=True).order_by(TextContent.order_index.desc()).all()
+            return jsonify([{
+                'id': t.id,
+                'title': t.title,
+                'content': t.content,
+                'excerpt': t.excerpt,
+                'created_at': t.created_at.isoformat()
+            } for t in texts])
+        
+        elif request.method == 'POST':
+            data = request.get_json()
+            text = TextContent(
+                title=data['title'],
+                content=data['content'],
+                excerpt=data.get('excerpt'),
+                is_published=data.get('is_published', True),
+                order_index=data.get('order_index', 0)
+            )
+            db.session.add(text)
+            db.session.commit()
+            return jsonify({'message': 'Text created successfully', 'id': text.id}), 201
+    except Exception as e:
+        print(f"❌ Texts API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/texts', methods=['GET'])
+def admin_texts():
+    try:
+        texts = TextContent.query.order_by(TextContent.order_index.desc()).all()
+        return jsonify([{
+            'id': t.id,
+            'title': t.title,
+            'content': t.content[:200] + '...' if len(t.content) > 200 else t.content,
+            'excerpt': t.excerpt,
+            'is_published': t.is_published,
+            'order_index': t.order_index,
+            'created_at': t.created_at.isoformat()
+        } for t in texts])
+    except Exception as e:
+        print(f"❌ Admin texts error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/texts/<int:text_id>', methods=['GET', 'PUT', 'DELETE'])
+def manage_text(text_id):
+    try:
+        text = TextContent.query.get_or_404(text_id)
+        
+        if request.method == 'GET':
+            return jsonify({
+                'id': text.id,
+                'title': text.title,
+                'content': text.content,
+                'excerpt': text.excerpt,
+                'is_published': text.is_published,
+                'order_index': text.order_index,
+                'created_at': text.created_at.isoformat()
+            })
+        
+        elif request.method == 'PUT':
+            data = request.get_json()
+            text.title = data.get('title', text.title)
+            text.content = data.get('content', text.content)
+            text.excerpt = data.get('excerpt', text.excerpt)
+            text.is_published = data.get('is_published', text.is_published)
+            text.order_index = data.get('order_index', text.order_index)
+            db.session.commit()
+            return jsonify({'message': 'Text updated successfully'})
+        
+        elif request.method == 'DELETE':
+            db.session.delete(text)
+            db.session.commit()
+            return jsonify({'message': 'Text deleted successfully'})
+            
+    except Exception as e:
+        print(f"❌ Manage text error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# Error handlers
+@app.errorhandler(413)
+def too_large(e):
+    return jsonify({'error': 'File is too large. Maximum size is 500MB.'}), 413
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({'error': 'Not found'}), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return jsonify({'error': 'Internal server error'}), 500
+
+# Initialize database
+with app.app_context():
+    try:
+        db.create_all()
+        print("✅ Database tables created successfully")
+    except Exception as e:
+        print(f"❌ Database error: {e}")
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
