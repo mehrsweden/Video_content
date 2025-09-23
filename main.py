@@ -288,7 +288,29 @@ def admin():
             <p>Status: {status}</p>
         </body>
         </html>
-        '''
+ @app.route('/article/<int:article_id>')
+def view_article(article_id):
+    try:
+        article = TextContent.query.get(article_id)
+        if not article or not article.is_published:
+            return 'Article Not Found', 404
+        
+        content = article.content.replace('\n', '<br>')
+        return f'''<!DOCTYPE html>
+<html><head><title>{article.title}</title></head>
+<body style="max-width:800px;margin:0 auto;padding:20px;font-family:Arial;">
+<a href="/">← Back</a><h1>{article.title}</h1><div>{content}</div>
+</body></html>'''
+    except:
+        return 'Error loading article', 500
+
+@app.route('/api/articles')
+def get_articles():
+    try:
+        texts = TextContent.query.filter_by(is_published=True).all()
+        return jsonify([{'id': t.id, 'title': t.title, 'content': t.content} for t in texts])
+    except:
+        return jsonify({'error': 'Failed to load articles'}), 500       '''
 # Add this right after: app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app, origins=["https://mehropenmind.com", "http://localhost:3000"])        
 @app.route('/health')
