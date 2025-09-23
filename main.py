@@ -289,7 +289,8 @@ def admin():
         </body>
         </html>
         '''
-        
+# Add this right after: app = Flask(__name__, static_folder='static', static_url_path='/static')
+CORS(app, origins=["https://mehropenmind.com", "http://localhost:3000"])        
 @app.route('/health')
 def health():
     return jsonify({
