@@ -235,17 +235,18 @@
 
 <script>
     // Add these variables to your global variables section (at the top of script)
+// Add this to your global variables section (near the top of script)
 let articleUploadedFiles = [];
 
-// Replace your setupFileUpload function with this updated version:
+// Add this to your setupFileUpload function (replace the existing one)
 function setupFileUpload() {
     // Video upload in video section
     setupDropZone('video-drop-zone', 'video-file-input', 'video', handleVideoFileUpload);
     
-    // Document upload in document section
+    // Document upload in document section  
     setupDropZone('document-drop-zone', 'document-file-input', 'document', handleDocumentFileUpload);
     
-    // Article file uploads
+    // Article file uploads - ADD THESE LINES
     setupDropZone('article-image-drop-zone', 'article-image-input', 'image', handleArticleFileUpload);
     setupDropZone('article-doc-drop-zone', 'article-doc-input', 'document', handleArticleFileUpload);
     
@@ -253,6 +254,47 @@ function setupFileUpload() {
     setupDropZone('file-video-drop-zone', 'file-video-input', 'video', handleFileUpload);
     setupDropZone('file-image-drop-zone', 'file-image-input', 'image', handleFileUpload);
     setupDropZone('file-document-drop-zone', 'file-document-input', 'document', handleFileUpload);
+}
+
+// ADD THIS NEW FUNCTION
+async function handleArticleFileUpload(file, fileType) {
+    if (!file) return;
+    
+    console.log('Uploading article file:', file.name, 'Type:', fileType);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', fileType);
+    
+    try {
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Upload successful:', result);
+            
+            // Add to uploaded files list
+            articleUploadedFiles.push({
+                name: file.name,
+                url: result.url,
+                type: fileType,
+                size: result.size,
+                originalName: result.original_name
+            });
+            
+            alert(`File uploaded successfully: ${file.name}`);
+            
+        } else {
+            throw new Error('Upload failed');
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+        alert('Upload failed: ' + error.message);
+    }
+}
     
     // Article insert buttons
     const insertImageBtn = document.getElementById('insert-image-btn');
