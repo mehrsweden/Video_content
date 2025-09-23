@@ -257,63 +257,92 @@ def delete_file_http(filename):
         return False
 
 # Routes
-# Replace your current @app.route('/') function with this:
 @app.route('/')
 def index():
     try:
         # Try to serve static file first
         return send_from_directory(app.static_folder, 'index.html')
     except:
-        # Simple home page without document display
-        status = "Connected" if supabase_available else "Disconnected"
-        status_color = "#d4edda" if supabase_available else "#f8d7da"
-        status_text_color = "#155724" if supabase_available else "#721c24"
-        
-        return f'''
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Content Hub</title>
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-            <style>
-                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }}
-                .header {{ background: white; padding: 40px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-                .status {{ padding: 10px; border-radius: 4px; margin: 15px 0; background: {status_color}; color: {status_text_color}; }}
-                .nav-buttons {{ margin: 30px 0; }}
-                .nav-buttons a {{ background: #007bff; color: white; padding: 15px 25px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px; transition: background 0.3s; font-weight: 500; }}
-                .nav-buttons a:hover {{ background: #0056b3; }}
-                .nav-buttons a.admin {{ background: #28a745; }}
-                .nav-buttons a.admin:hover {{ background: #1e7e34; }}
-                h1 {{ color: #333; margin: 0; font-size: 2.5rem; }}
-                p {{ font-size: 1.1rem; color: #666; }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1><i class="fas fa-database"></i> Content Hub</h1>
-                <div class="status">
-                    <i class="fas fa-{'check-circle' if supabase_available else 'exclamation-circle'}"></i> 
-                    Supabase: {status}
+        # If no static file, show dynamic home page with documents
+        try:
+            # Get latest documents
+            documents = Document.query.filter_by(is_published=True).order_by(Document.created_at.desc()).limit(5).all()
+            
+            doc_list = ""
+            if documents:
+                doc_list = "<h2>📁 Latest Documents</h2>"
+                for doc in documents:
+                    icon = get_file_icon(doc.file_type)
+                    size_mb = round(doc.file_size / (1024*1024), 2) if doc.file_size else 0
+                    doc_list += f'''
+                    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; background: white;">
+                        <h3><i class="{icon}" style="margin-right: 10px; color: #007bff;"></i>{doc.title}</h3>
+                        <p>{doc.description or 'No description available'}</p>
+                        <p><small>Size: {size_mb} MB | Downloads: {doc.download_count} | Added: {doc.created_at.strftime('%Y-%m-%d')}</small></p>
+                        <a href="/download/{doc.id}" style="background: #007bff; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px; display: inline-block;">
+                            <i class="fas fa-download"></i> Download
+                        </a>
+                    </div>
+                    '''
+                doc_list += f'<p style="text-align: center; margin-top: 20px;"><a href="/documents" style="color: #007bff;">View All Documents ({Document.query.filter_by(is_published=True).count()})</a></p>'
+            
+            # Get Supabase status
+            status = "Connected" if supabase_available else "Disconnected"
+            status_color = "#d4edda" if supabase_available else "#f8d7da"
+            status_text_color = "#155724" if supabase_available else "#721c24"
+            
+            return f'''
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Content Hub</title>
+                <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+                <style>
+                    body {{ font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f5f5f5; }}
+                    .header {{ background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+                    .status {{ padding: 10px; border-radius: 4px; margin: 15px 0; background: {status_color}; color: {status_text_color}; }}
+                    .nav-buttons {{ margin: 20px 0; }}
+                    .nav-buttons a {{ background: #007bff; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin: 5px; transition: background 0.3s; }}
+                    .nav-buttons a:hover {{ background: #0056b3; }}
+                    .nav-buttons a.admin {{ background: #28a745; }}
+                    .nav-buttons a.admin:hover {{ background: #1e7e34; }}
+                    .content {{ background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+                    h1 {{ color: #333; margin: 0; }}
+                    h2 {{ color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; }}
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1><i class="fas fa-database"></i> Content Hub</h1>
+                    <div class="status">
+                        <i class="fas fa-{'check-circle' if supabase_available else 'exclamation-circle'}"></i> 
+                        Supabase: {status}
+                    </div>
+                    <p>Welcome to your content management system!</p>
+                    
+                    <div class="nav-buttons">
+                        <a href="/admin.html?password={os.environ.get('ADMIN_PASSWORD', 'admin123')}" class="admin">
+                            <i class="fas fa-cog"></i> Admin Panel
+                        </a>
+                        <a href="/documents">
+                            <i class="fas fa-folder"></i> All Documents
+                        </a>
+                        <a href="/health">
+                            <i class="fas fa-heartbeat"></i> System Health
+                        </a>
+                    </div>
                 </div>
-                <p>Welcome to your content management system!</p>
                 
-                <div class="nav-buttons">
-                    <a href="/admin.html?password={os.environ.get('ADMIN_PASSWORD', 'admin123')}" class="admin">
-                        <i class="fas fa-cog"></i> Admin Panel
-                    </a>
-                    <a href="/documents">
-                        <i class="fas fa-folder"></i> View Documents
-                    </a>
-                    <a href="/health">
-                        <i class="fas fa-heartbeat"></i> System Health
-                    </a>
+                <div class="content">
+                    {doc_list if doc_list else '<p style="text-align: center; color: #666; padding: 50px;">No documents uploaded yet. <a href="/admin.html">Go to Admin Panel</a> to upload files.</p>'}
                 </div>
-            </div>
-        </body>
-        </html>
-        '''
+            </body>
+            </html>
+            '''
+        except Exception as e:
+            return f"<h1>Content Hub</h1><p>Error loading page: {str(e)}</p>"
 
 # Update your existing index route to link to articles correctly
 @app.route('/')
