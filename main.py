@@ -257,13 +257,21 @@ def delete_file_http(filename):
         return False
 
 # Routes
-# Add these routes to your main.py file
-
+# Add this import at the top of your main.py file (with other imports)
+import re
 @app.route('/article/<int:article_id>')
 def view_article(article_id):
     """Display individual article"""
     try:
-        article = TextContent.query.filter_by(id=article_id, is_published=True).first_or_404()
+        article = TextContent.query.filter_by(id=article_id, is_published=True).first()
+        if not article:
+            return "<h1>Article not found</h1><a href='/'>← Back to Home</a>", 404
+        
+        # Simple content formatting
+        content = article.content.replace('\n\n', '</p><p>')
+        content = content.replace('\n', '<br>')
+        if content and not content.startswith('<'):
+            content = f'<p>{content}</p>'
         
         return f'''
         <!DOCTYPE html>
@@ -272,81 +280,43 @@ def view_article(article_id):
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>{article.title} - Content Hub</title>
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
             <style>
                 body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; line-height: 1.6; }}
-                .article-header {{ background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-                .article-content {{ background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-                .article-meta {{ color: #666; font-size: 14px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; }}
+                .article-header {{ background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; }}
+                .article-content {{ background: white; padding: 30px; border-radius: 8px; }}
                 .back-link {{ display: inline-block; margin-bottom: 20px; color: #007bff; text-decoration: none; }}
-                .back-link:hover {{ text-decoration: underline; }}
                 h1 {{ color: #333; margin: 0 0 15px 0; }}
                 .excerpt {{ font-size: 18px; color: #666; font-style: italic; margin-bottom: 20px; }}
+                .meta {{ color: #888; font-size: 14px; margin-bottom: 20px; }}
                 .content {{ font-size: 16px; color: #444; }}
-                .content img {{ max-width: 100%; height: auto; border-radius: 4px; margin: 15px 0; }}
-                .content a {{ color: #007bff; text-decoration: none; }}
-                .content a:hover {{ text-decoration: underline; }}
-                .content pre {{ background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; }}
-                .content code {{ background: #f8f9fa; padding: 2px 4px; border-radius: 3px; font-size: 14px; }}
-                .content blockquote {{ border-left: 4px solid #007bff; padding-left: 20px; margin: 20px 0; color: #666; }}
                 .download-btn {{ background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 20px; }}
-                .download-btn:hover {{ background: #218838; text-decoration: none; color: white; }}
             </style>
         </head>
         <body>
-            <a href="/" class="back-link">
-                <i class="fas fa-arrow-left"></i> Back to Home
-            </a>
+            <a href="/" class="back-link">← Back to Home</a>
             
             <div class="article-header">
                 <h1>{article.title}</h1>
                 {f'<p class="excerpt">{article.excerpt}</p>' if article.excerpt else ''}
-                <div class="article-meta">
-                    <i class="fas fa-calendar"></i> Published on {article.created_at.strftime('%B %d, %Y')}
-                    <span style="margin-left: 20px;"><i class="fas fa-user"></i> Content Hub</span>
+                <div class="meta">
+                    Published on {article.created_at.strftime('%B %d, %Y')}
                 </div>
             </div>
             
             <div class="article-content">
                 <div class="content">
-                    {format_article_content(article.content)}
+                    {content}
                 </div>
                 
                 <a href="/api/download/article/{article.id}" class="download-btn">
-                    <i class="fas fa-download"></i> Download as Text File
+                    Download as Text File
                 </a>
             </div>
         </body>
         </html>
         '''
     except Exception as e:
-        return f"<h1>Article not found</h1><p>Error: {str(e)}</p><a href='/'>← Back to Home</a>", 404
-
-def format_article_content(content):
-    """Basic Markdown-like formatting for article content"""
-    import re
-    
-    # Replace newlines with proper HTML breaks
-    content = content.replace('\n\n', '</p><p>')
-    content = content.replace('\n', '<br>')
-    
-    # Convert **bold** to <strong>
-    content = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', content)
-    
-    # Convert *italic* to <em>
-    content = re.sub(r'\*(.*?)\*', r'<em>\1</em>', content)
-    
-    # Convert ![alt](url) to <img>
-    content = re.sub(r'!\[([^\]]*)\]\(([^)]*)\)', r'<img src="\2" alt="\1" />', content)
-    
-    # Convert [text](url) to <a>
-    content = re.sub(r'\[([^\]]*)\]\(([^)]*)\)', r'<a href="\2" target="_blank">\1</a>', content)
-    
-    # Wrap in paragraphs
-    if content and not content.startswith('<'):
-        content = f'<p>{content}</p>'
-    
-    return content
+        return f"<h1>Error loading article</h1><p>{str(e)}</p><a href='/'>← Back to Home</a>", 500
 
 @app.route('/articles')
 def articles_list():
@@ -356,15 +326,16 @@ def articles_list():
         
         articles_html = ""
         for article in articles:
+            excerpt = article.excerpt or (article.content[:150] + '...' if len(article.content) > 150 else article.content)
             articles_html += f'''
             <div style="border: 1px solid #ddd; padding: 20px; margin: 15px 0; border-radius: 8px; background: white;">
                 <h3><a href="/article/{article.id}" style="text-decoration: none; color: #333;">{article.title}</a></h3>
-                <p style="color: #666; margin: 10px 0;">{article.excerpt or 'No excerpt available'}</p>
+                <p style="color: #666; margin: 10px 0;">{excerpt}</p>
                 <div style="color: #888; font-size: 14px; margin-bottom: 15px;">
-                    <i class="fas fa-calendar"></i> {article.created_at.strftime('%B %d, %Y')}
+                    {article.created_at.strftime('%B %d, %Y')}
                 </div>
                 <a href="/article/{article.id}" style="background: #007bff; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px;">
-                    Read More <i class="fas fa-arrow-right"></i>
+                    Read More
                 </a>
             </div>
             '''
@@ -379,10 +350,9 @@ def articles_list():
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>All Articles - Content Hub</title>
-            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
             <style>
                 body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }}
-                .header {{ background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+                .header {{ background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; text-align: center; }}
                 h1 {{ color: #333; margin: 0; }}
                 a {{ color: #007bff; text-decoration: none; }}
                 a:hover {{ text-decoration: underline; }}
@@ -390,7 +360,7 @@ def articles_list():
         </head>
         <body>
             <div class="header">
-                <h1><i class="fas fa-newspaper"></i> All Articles</h1>
+                <h1>All Articles</h1>
                 <a href="/">← Back to Home</a>
             </div>
             {articles_html}
