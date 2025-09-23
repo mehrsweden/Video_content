@@ -257,36 +257,63 @@ def delete_file_http(filename):
         return False
 
 # Routes
-@app.route('/article/<int:article_id>')
-def view_article(article_id):
+# Replace your current @app.route('/') function with this:
+@app.route('/')
+def index():
     try:
-        article = TextContent.query.get_or_404(article_id)
-        if not article.is_published:
-            return "Article not available", 404
+        # Try to serve static file first
+        return send_from_directory(app.static_folder, 'index.html')
+    except:
+        # Simple home page without document display
+        status = "Connected" if supabase_available else "Disconnected"
+        status_color = "#d4edda" if supabase_available else "#f8d7da"
+        status_text_color = "#155724" if supabase_available else "#721c24"
         
-        return f"""
-        <html>
+        return f'''
+        <!DOCTYPE html>
+        <html lang="en">
         <head>
-            <title>{article.title}</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Content Hub</title>
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
             <style>
-                body {{ font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }}
-                .back {{ color: #007bff; text-decoration: none; }}
-                h1 {{ color: #333; }}
-                .meta {{ color: #666; font-size: 14px; margin: 20px 0; }}
-                .content {{ margin: 20px 0; }}
+                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }}
+                .header {{ background: white; padding: 40px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+                .status {{ padding: 10px; border-radius: 4px; margin: 15px 0; background: {status_color}; color: {status_text_color}; }}
+                .nav-buttons {{ margin: 30px 0; }}
+                .nav-buttons a {{ background: #007bff; color: white; padding: 15px 25px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px; transition: background 0.3s; font-weight: 500; }}
+                .nav-buttons a:hover {{ background: #0056b3; }}
+                .nav-buttons a.admin {{ background: #28a745; }}
+                .nav-buttons a.admin:hover {{ background: #1e7e34; }}
+                h1 {{ color: #333; margin: 0; font-size: 2.5rem; }}
+                p {{ font-size: 1.1rem; color: #666; }}
             </style>
         </head>
         <body>
-            <a href="/" class="back">← Back to Home</a>
-            <h1>{article.title}</h1>
-            <div class="meta">Published: {article.created_at.strftime('%B %d, %Y')}</div>
-            <div class="content">{article.content.replace(chr(10), '<br>')}</div>
-            <p><a href="/api/download/article/{article.id}">Download as Text File</a></p>
+            <div class="header">
+                <h1><i class="fas fa-database"></i> Content Hub</h1>
+                <div class="status">
+                    <i class="fas fa-{'check-circle' if supabase_available else 'exclamation-circle'}"></i> 
+                    Supabase: {status}
+                </div>
+                <p>Welcome to your content management system!</p>
+                
+                <div class="nav-buttons">
+                    <a href="/admin.html?password={os.environ.get('ADMIN_PASSWORD', 'admin123')}" class="admin">
+                        <i class="fas fa-cog"></i> Admin Panel
+                    </a>
+                    <a href="/documents">
+                        <i class="fas fa-folder"></i> View Documents
+                    </a>
+                    <a href="/health">
+                        <i class="fas fa-heartbeat"></i> System Health
+                    </a>
+                </div>
+            </div>
         </body>
         </html>
-        """
-    except:
-        return '<h1>Article not found</h1><a href="/">← Back</a>'
+        '''
 
 # Update your existing index route to link to articles correctly
 @app.route('/')
