@@ -138,33 +138,32 @@
     </section>
 
     <!-- Texts Management Section -->
-   <!-- Replace your current texts-section in admin.html with this updated version -->
+   
+<!-- Replace your Articles section in admin.html with this: -->
 <section id="texts-section" class="container mx-auto px-6 py-8 hidden">
     <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
         <h2 class="text-xl font-bold mb-4">Add New Article</h2>
         
-        <!-- File Upload Section for Articles -->
+        <!-- Simple File Upload Section -->
         <div class="mb-6">
             <h3 class="text-lg font-semibold mb-3">Upload Files for Article</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <!-- Image Upload -->
-                <div>
+                <div class="border rounded-lg p-4">
                     <h4 class="font-medium mb-2">Upload Images</h4>
-                    <div id="article-image-drop-zone" class="file-drop-zone p-4 text-center rounded-lg cursor-pointer">
-                        <i class="fas fa-image text-2xl text-gray-400 mb-2"></i>
-                        <p class="text-sm text-gray-600">Drop images here</p>
-                        <input type="file" id="article-image-input" accept="image/*" class="hidden" multiple>
-                    </div>
+                    <input type="file" id="article-images" accept="image/*" multiple class="w-full p-2 border rounded mb-2">
+                    <button type="button" onclick="uploadArticleImages()" class="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600">
+                        <i class="fas fa-upload mr-1"></i>Upload Images
+                    </button>
                 </div>
                 
                 <!-- Document Upload -->
-                <div>
+                <div class="border rounded-lg p-4">
                     <h4 class="font-medium mb-2">Upload Documents</h4>
-                    <div id="article-doc-drop-zone" class="file-drop-zone p-4 text-center rounded-lg cursor-pointer">
-                        <i class="fas fa-file-alt text-2xl text-gray-400 mb-2"></i>
-                        <p class="text-sm text-gray-600">Drop files here</p>
-                        <input type="file" id="article-doc-input" accept=".pdf,.doc,.docx,.txt,.md" class="hidden" multiple>
-                    </div>
+                    <input type="file" id="article-documents" accept=".pdf,.doc,.docx,.txt,.md" multiple class="w-full p-2 border rounded mb-2">
+                    <button type="button" onclick="uploadArticleDocuments()" class="bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600">
+                        <i class="fas fa-upload mr-1"></i>Upload Documents
+                    </button>
                 </div>
             </div>
             
@@ -179,7 +178,7 @@
             <!-- Uploaded Files List -->
             <div id="article-files-list" class="hidden">
                 <h4 class="font-medium mb-2">Uploaded Files</h4>
-                <div id="article-files-container" class="space-y-2"></div>
+                <div id="article-files-container" class="space-y-2 max-h-40 overflow-y-auto"></div>
             </div>
         </div>
 
@@ -201,10 +200,10 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Content *</label>
                 <div class="mb-2">
-                    <button type="button" id="insert-image-btn" class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded mr-2" disabled>
+                    <button type="button" id="insert-image-btn" class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded mr-2" onclick="showImageInsertModal()" disabled>
                         <i class="fas fa-image mr-1"></i>Insert Image
                     </button>
-                    <button type="button" id="insert-link-btn" class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded" disabled>
+                    <button type="button" id="insert-link-btn" class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded" onclick="showLinkInsertModal()" disabled>
                         <i class="fas fa-link mr-1"></i>Insert File Link
                     </button>
                 </div>
@@ -234,107 +233,56 @@
 </section>
 
 <script>
-    // Add these variables to your global variables section (at the top of script)
-// Add this to your global variables section (near the top of script)
+// Add these to your global variables
 let articleUploadedFiles = [];
 
-// Add this to your setupFileUpload function (replace the existing one)
-function setupFileUpload() {
-    // Video upload in video section
-    setupDropZone('video-drop-zone', 'video-file-input', 'video', handleVideoFileUpload);
-    
-    // Document upload in document section  
-    setupDropZone('document-drop-zone', 'document-file-input', 'document', handleDocumentFileUpload);
-    
-    // Article file uploads - ADD THESE LINES
-    setupDropZone('article-image-drop-zone', 'article-image-input', 'image', handleArticleFileUpload);
-    setupDropZone('article-doc-drop-zone', 'article-doc-input', 'document', handleArticleFileUpload);
-    
-    // File manager uploads
-    setupDropZone('file-video-drop-zone', 'file-video-input', 'video', handleFileUpload);
-    setupDropZone('file-image-drop-zone', 'file-image-input', 'image', handleFileUpload);
-    setupDropZone('file-document-drop-zone', 'file-document-input', 'document', handleFileUpload);
-}
+// Add these functions to your script section:
 
-// ADD THIS NEW FUNCTION
-async function handleArticleFileUpload(file, fileType) {
-    if (!file) return;
+// Upload images for article
+async function uploadArticleImages() {
+    const fileInput = document.getElementById('article-images');
+    const files = fileInput.files;
     
-    console.log('Uploading article file:', file.name, 'Type:', fileType);
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', fileType);
-    
-    try {
-        const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            console.log('Upload successful:', result);
-            
-            // Add to uploaded files list
-            articleUploadedFiles.push({
-                name: file.name,
-                url: result.url,
-                type: fileType,
-                size: result.size,
-                originalName: result.original_name
-            });
-            
-            alert(`File uploaded successfully: ${file.name}`);
-            
-        } else {
-            throw new Error('Upload failed');
-        }
-    } catch (error) {
-        console.error('Upload error:', error);
-        alert('Upload failed: ' + error.message);
+    if (files.length === 0) {
+        alert('Please select at least one image file.');
+        return;
     }
-}
     
-    // Article insert buttons
-    const insertImageBtn = document.getElementById('insert-image-btn');
-    const insertLinkBtn = document.getElementById('insert-link-btn');
-    
-    if (insertImageBtn) insertImageBtn.addEventListener('click', showImageInsertModal);
-    if (insertLinkBtn) insertLinkBtn.addEventListener('click', showLinkInsertModal);
+    await uploadArticleFiles(files, 'image');
+    fileInput.value = ''; // Clear the input
 }
 
-// Add these new functions for article file handling:
+// Upload documents for article
+async function uploadArticleDocuments() {
+    const fileInput = document.getElementById('article-documents');
+    const files = fileInput.files;
+    
+    if (files.length === 0) {
+        alert('Please select at least one document file.');
+        return;
+    }
+    
+    await uploadArticleFiles(files, 'document');
+    fileInput.value = ''; // Clear the input
+}
 
-// Handle article file uploads
-async function handleArticleFileUpload(files, fileType) {
-    if (!files) return;
-    
-    // Handle single file or multiple files
-    const fileArray = files.length ? Array.from(files) : [files];
-    
+// Upload files helper function
+async function uploadArticleFiles(files, fileType) {
     const progressContainer = document.getElementById('article-upload-progress');
     const progressBar = document.getElementById('article-progress-bar');
     const statusText = document.getElementById('article-upload-status');
     
-    // Show progress container
-    if (progressContainer) {
-        progressContainer.classList.remove('hidden');
-    }
+    progressContainer.classList.remove('hidden');
     
-    for (let i = 0; i < fileArray.length; i++) {
-        const file = fileArray[i];
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const formData = new FormData();
         formData.append('file', file);
         formData.append('type', fileType);
         
         try {
-            if (statusText) {
-                statusText.textContent = `Uploading ${file.name} (${i + 1}/${fileArray.length})...`;
-            }
-            if (progressBar) {
-                progressBar.style.width = `${((i / fileArray.length) * 100)}%`;
-            }
+            statusText.textContent = `Uploading ${file.name} (${i + 1}/${files.length})...`;
+            progressBar.style.width = `${((i / files.length) * 100)}%`;
             
             const response = await fetch('/api/upload', {
                 method: 'POST',
@@ -353,7 +301,6 @@ async function handleArticleFileUpload(files, fileType) {
                     originalName: result.original_name
                 });
                 
-                updateArticleFilesList();
                 console.log(`✅ Uploaded: ${file.name}`);
                 
             } else {
@@ -361,28 +308,18 @@ async function handleArticleFileUpload(files, fileType) {
             }
         } catch (error) {
             console.error('Upload error:', error);
-            if (statusText) {
-                statusText.textContent = `Upload failed for ${file.name}`;
-                statusText.classList.add('text-red-600');
-            }
+            alert(`Upload failed for ${file.name}: ${error.message}`);
         }
     }
     
-    if (statusText) {
-        statusText.textContent = 'All uploads completed!';
-        statusText.classList.remove('text-red-600');
-    }
-    if (progressBar) {
-        progressBar.style.width = '100%';
-    }
+    statusText.textContent = `Successfully uploaded ${files.length} file(s)!`;
+    progressBar.style.width = '100%';
+    
+    updateArticleFilesList();
     
     setTimeout(() => {
-        if (progressContainer) {
-            progressContainer.classList.add('hidden');
-        }
-        if (progressBar) {
-            progressBar.style.width = '0%';
-        }
+        progressContainer.classList.add('hidden');
+        progressBar.style.width = '0%';
     }, 2000);
 }
 
@@ -390,8 +327,6 @@ async function handleArticleFileUpload(files, fileType) {
 function updateArticleFilesList() {
     const filesList = document.getElementById('article-files-list');
     const filesContainer = document.getElementById('article-files-container');
-    
-    if (!filesList || !filesContainer) return;
     
     if (articleUploadedFiles.length === 0) {
         filesList.classList.add('hidden');
@@ -401,11 +336,8 @@ function updateArticleFilesList() {
     filesList.classList.remove('hidden');
     
     // Enable insert buttons
-    const insertImageBtn = document.getElementById('insert-image-btn');
-    const insertLinkBtn = document.getElementById('insert-link-btn');
-    
-    if (insertImageBtn) insertImageBtn.disabled = false;
-    if (insertLinkBtn) insertLinkBtn.disabled = false;
+    document.getElementById('insert-image-btn').disabled = false;
+    document.getElementById('insert-link-btn').disabled = false;
     
     filesContainer.innerHTML = articleUploadedFiles.map((file, index) => `
         <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
@@ -416,7 +348,7 @@ function updateArticleFilesList() {
             </div>
             <div class="flex space-x-2">
                 <button onclick="copyFileUrl('${file.url}')" class="text-blue-500 hover:text-blue-700 text-xs">
-                    <i class="fas fa-copy"></i> Copy URL
+                    <i class="fas fa-copy"></i> Copy
                 </button>
                 <button onclick="removeArticleFile(${index})" class="text-red-500 hover:text-red-700 text-xs">
                     <i class="fas fa-times"></i>
@@ -435,13 +367,17 @@ function removeArticleFile(index) {
 // Copy file URL to clipboard
 function copyFileUrl(url) {
     navigator.clipboard.writeText(url).then(() => {
-        console.log('URL copied to clipboard:', url);
         // Simple notification
-        const notification = document.createElement('div');
-        notification.textContent = 'URL copied to clipboard!';
-        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 10px 20px; border-radius: 4px; z-index: 1000;';
-        document.body.appendChild(notification);
-        setTimeout(() => document.body.removeChild(notification), 2000);
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        button.classList.add('text-green-500');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('text-green-500');
+            button.classList.add('text-blue-500');
+        }, 2000);
     });
 }
 
@@ -453,7 +389,7 @@ function showImageInsertModal() {
         return;
     }
     
-    const imageOptions = images.map((img, index) => 
+    const imageOptions = images.map(img => 
         `<option value="${img.url}">${img.originalName}</option>`
     ).join('');
     
@@ -495,7 +431,7 @@ function showLinkInsertModal() {
         return;
     }
     
-    const fileOptions = files.map((file, index) => 
+    const fileOptions = files.map(file => 
         `<option value="${file.url}">${file.originalName}</option>`
     ).join('');
     
@@ -581,14 +517,11 @@ function cancelTextEdit() {
     articleUploadedFiles = [];
     updateArticleFilesList();
     
-    const insertImageBtn = document.getElementById('insert-image-btn');
-    const insertLinkBtn = document.getElementById('insert-link-btn');
-    if (insertImageBtn) insertImageBtn.disabled = true;
-    if (insertLinkBtn) insertLinkBtn.disabled = true;
+    document.getElementById('insert-image-btn').disabled = true;
+    document.getElementById('insert-link-btn').disabled = true;
 }
 </script>
                 
-
     <!-- Documents Management Section -->
     <section id="documents-section" class="container mx-auto px-6 py-8 hidden">
         <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
