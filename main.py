@@ -257,58 +257,36 @@ def delete_file_http(filename):
         return False
 
 # Routes
-
-@app.route('/articles')
-def articles_list():
-    """Display all published articles"""
+@app.route('/article/<int:article_id>')
+def view_article(article_id):
     try:
-        articles = TextContent.query.filter_by(is_published=True).order_by(TextContent.created_at.desc()).all()
+        article = TextContent.query.get_or_404(article_id)
+        if not article.is_published:
+            return "Article not available", 404
         
-        articles_html = ""
-        for article in articles:
-            excerpt = article.excerpt or (article.content[:150] + '...' if len(article.content) > 150 else article.content)
-            articles_html += f'''
-            <div style="border: 1px solid #ddd; padding: 20px; margin: 15px 0; border-radius: 8px; background: white;">
-                <h3><a href="/article/{article.id}" style="text-decoration: none; color: #333;">{article.title}</a></h3>
-                <p style="color: #666; margin: 10px 0;">{excerpt}</p>
-                <div style="color: #888; font-size: 14px; margin-bottom: 15px;">
-                    {article.created_at.strftime('%B %d, %Y')}
-                </div>
-                <a href="/article/{article.id}" style="background: #007bff; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px;">
-                    Read More
-                </a>
-            </div>
-            '''
-        
-        if not articles_html:
-            articles_html = "<p style='text-align: center; color: #666; padding: 50px;'>No articles published yet.</p>"
-        
-        return f'''
-        <!DOCTYPE html>
-        <html lang="en">
+        return f"""
+        <html>
         <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>All Articles - Content Hub</title>
+            <title>{article.title}</title>
             <style>
-                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }}
-                .header {{ background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; text-align: center; }}
-                h1 {{ color: #333; margin: 0; }}
-                a {{ color: #007bff; text-decoration: none; }}
-                a:hover {{ text-decoration: underline; }}
+                body {{ font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }}
+                .back {{ color: #007bff; text-decoration: none; }}
+                h1 {{ color: #333; }}
+                .meta {{ color: #666; font-size: 14px; margin: 20px 0; }}
+                .content {{ margin: 20px 0; }}
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>All Articles</h1>
-                <a href="/">← Back to Home</a>
-            </div>
-            {articles_html}
+            <a href="/" class="back">← Back to Home</a>
+            <h1>{article.title}</h1>
+            <div class="meta">Published: {article.created_at.strftime('%B %d, %Y')}</div>
+            <div class="content">{article.content.replace(chr(10), '<br>')}</div>
+            <p><a href="/api/download/article/{article.id}">Download as Text File</a></p>
         </body>
         </html>
-        '''
-    except Exception as e:
-        return f"<h1>Error loading articles</h1><p>{str(e)}</p>"
+        """
+    except:
+        return '<h1>Article not found</h1><a href="/">← Back</a>'
 
 # Update your existing index route to link to articles correctly
 @app.route('/')
