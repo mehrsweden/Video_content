@@ -234,34 +234,51 @@
 </section>
 
 <script>
-// Add these variables to your existing JavaScript (add to the global variables section)
+    // Add these variables to your global variables section (at the top of script)
 let articleUploadedFiles = [];
 
-// Add these functions to your existing admin.html script section
-
-// Setup article file upload when page loads
-function setupArticleFileUpload() {
-    // Setup drop zones for articles
+// Replace your setupFileUpload function with this updated version:
+function setupFileUpload() {
+    // Video upload in video section
+    setupDropZone('video-drop-zone', 'video-file-input', 'video', handleVideoFileUpload);
+    
+    // Document upload in document section
+    setupDropZone('document-drop-zone', 'document-file-input', 'document', handleDocumentFileUpload);
+    
+    // Article file uploads
     setupDropZone('article-image-drop-zone', 'article-image-input', 'image', handleArticleFileUpload);
     setupDropZone('article-doc-drop-zone', 'article-doc-input', 'document', handleArticleFileUpload);
     
-    // Setup insert buttons
-    document.getElementById('insert-image-btn').addEventListener('click', showImageInsertModal);
-    document.getElementById('insert-link-btn').addEventListener('click', showLinkInsertModal);
+    // File manager uploads
+    setupDropZone('file-video-drop-zone', 'file-video-input', 'video', handleFileUpload);
+    setupDropZone('file-image-drop-zone', 'file-image-input', 'image', handleFileUpload);
+    setupDropZone('file-document-drop-zone', 'file-document-input', 'document', handleFileUpload);
+    
+    // Article insert buttons
+    const insertImageBtn = document.getElementById('insert-image-btn');
+    const insertLinkBtn = document.getElementById('insert-link-btn');
+    
+    if (insertImageBtn) insertImageBtn.addEventListener('click', showImageInsertModal);
+    if (insertLinkBtn) insertLinkBtn.addEventListener('click', showLinkInsertModal);
 }
+
+// Add these new functions for article file handling:
 
 // Handle article file uploads
 async function handleArticleFileUpload(files, fileType) {
     if (!files) return;
     
-    // Handle multiple files
+    // Handle single file or multiple files
     const fileArray = files.length ? Array.from(files) : [files];
     
     const progressContainer = document.getElementById('article-upload-progress');
     const progressBar = document.getElementById('article-progress-bar');
     const statusText = document.getElementById('article-upload-status');
     
-    progressContainer.classList.remove('hidden');
+    // Show progress container
+    if (progressContainer) {
+        progressContainer.classList.remove('hidden');
+    }
     
     for (let i = 0; i < fileArray.length; i++) {
         const file = fileArray[i];
@@ -270,8 +287,12 @@ async function handleArticleFileUpload(files, fileType) {
         formData.append('type', fileType);
         
         try {
-            statusText.textContent = `Uploading ${file.name} (${i + 1}/${fileArray.length})...`;
-            progressBar.style.width = `${((i / fileArray.length) * 100)}%`;
+            if (statusText) {
+                statusText.textContent = `Uploading ${file.name} (${i + 1}/${fileArray.length})...`;
+            }
+            if (progressBar) {
+                progressBar.style.width = `${((i / fileArray.length) * 100)}%`;
+            }
             
             const response = await fetch('/api/upload', {
                 method: 'POST',
@@ -291,24 +312,35 @@ async function handleArticleFileUpload(files, fileType) {
                 });
                 
                 updateArticleFilesList();
+                console.log(`✅ Uploaded: ${file.name}`);
                 
             } else {
                 throw new Error(`Upload failed for ${file.name}`);
             }
         } catch (error) {
             console.error('Upload error:', error);
-            statusText.textContent = `Upload failed for ${file.name}`;
-            statusText.classList.add('text-red-600');
+            if (statusText) {
+                statusText.textContent = `Upload failed for ${file.name}`;
+                statusText.classList.add('text-red-600');
+            }
         }
     }
     
-    statusText.textContent = 'All uploads completed!';
-    progressBar.style.width = '100%';
+    if (statusText) {
+        statusText.textContent = 'All uploads completed!';
+        statusText.classList.remove('text-red-600');
+    }
+    if (progressBar) {
+        progressBar.style.width = '100%';
+    }
     
     setTimeout(() => {
-        progressContainer.classList.add('hidden');
-        progressBar.style.width = '0%';
-        statusText.classList.remove('text-red-600');
+        if (progressContainer) {
+            progressContainer.classList.add('hidden');
+        }
+        if (progressBar) {
+            progressBar.style.width = '0%';
+        }
     }, 2000);
 }
 
@@ -316,6 +348,8 @@ async function handleArticleFileUpload(files, fileType) {
 function updateArticleFilesList() {
     const filesList = document.getElementById('article-files-list');
     const filesContainer = document.getElementById('article-files-container');
+    
+    if (!filesList || !filesContainer) return;
     
     if (articleUploadedFiles.length === 0) {
         filesList.classList.add('hidden');
@@ -325,8 +359,11 @@ function updateArticleFilesList() {
     filesList.classList.remove('hidden');
     
     // Enable insert buttons
-    document.getElementById('insert-image-btn').disabled = false;
-    document.getElementById('insert-link-btn').disabled = false;
+    const insertImageBtn = document.getElementById('insert-image-btn');
+    const insertLinkBtn = document.getElementById('insert-link-btn');
+    
+    if (insertImageBtn) insertImageBtn.disabled = false;
+    if (insertLinkBtn) insertLinkBtn.disabled = false;
     
     filesContainer.innerHTML = articleUploadedFiles.map((file, index) => `
         <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
@@ -356,7 +393,13 @@ function removeArticleFile(index) {
 // Copy file URL to clipboard
 function copyFileUrl(url) {
     navigator.clipboard.writeText(url).then(() => {
-        showNotification('URL copied to clipboard!', 'success');
+        console.log('URL copied to clipboard:', url);
+        // Simple notification
+        const notification = document.createElement('div');
+        notification.textContent = 'URL copied to clipboard!';
+        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 10px 20px; border-radius: 4px; z-index: 1000;';
+        document.body.appendChild(notification);
+        setTimeout(() => document.body.removeChild(notification), 2000);
     });
 }
 
@@ -484,45 +527,22 @@ function closeModal() {
     }
 }
 
-// Show notification (add this if you don't have it)
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
-        type === 'success' ? 'bg-green-500 text-white' : 
-        type === 'error' ? 'bg-red-500 text-white' : 
-        'bg-blue-500 text-white'
-    }`;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-        }
-    }, 3000);
-}
-
-// Update your existing setupEventListeners function to include this:
-// Add this line to your setupEventListeners function:
-// setupArticleFileUpload();
-
-// Clear article files when canceling edit
-function clearArticleFiles() {
-    articleUploadedFiles = [];
-    updateArticleFilesList();
-    document.getElementById('insert-image-btn').disabled = true;
-    document.getElementById('insert-link-btn').disabled = true;
-}
-
-// Update your cancelTextEdit function to clear files:
+// Update your cancelTextEdit function to clear article files
 function cancelTextEdit() {
     editingTextId = null;
     document.getElementById('cancel-text-edit').classList.add('hidden');
     document.querySelector('#text-form button[type="submit"]').innerHTML = '<i class="fas fa-plus mr-2"></i>Add Article';
     document.getElementById('text-form').reset();
     document.getElementById('text-published').checked = true;
-    clearArticleFiles(); // Add this line
+    
+    // Clear article files
+    articleUploadedFiles = [];
+    updateArticleFilesList();
+    
+    const insertImageBtn = document.getElementById('insert-image-btn');
+    const insertLinkBtn = document.getElementById('insert-link-btn');
+    if (insertImageBtn) insertImageBtn.disabled = true;
+    if (insertLinkBtn) insertLinkBtn.disabled = true;
 }
 </script>
                 
