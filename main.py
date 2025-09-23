@@ -257,6 +257,246 @@ def delete_file_http(filename):
         return False
 
 # Routes
+# Add these routes to your main.py file
+
+@app.route('/article/<int:article_id>')
+def view_article(article_id):
+    """Display individual article"""
+    try:
+        article = TextContent.query.filter_by(id=article_id, is_published=True).first_or_404()
+        
+        return f'''
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>{article.title} - Content Hub</title>
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+            <style>
+                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; line-height: 1.6; }}
+                .article-header {{ background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+                .article-content {{ background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+                .article-meta {{ color: #666; font-size: 14px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; }}
+                .back-link {{ display: inline-block; margin-bottom: 20px; color: #007bff; text-decoration: none; }}
+                .back-link:hover {{ text-decoration: underline; }}
+                h1 {{ color: #333; margin: 0 0 15px 0; }}
+                .excerpt {{ font-size: 18px; color: #666; font-style: italic; margin-bottom: 20px; }}
+                .content {{ font-size: 16px; color: #444; }}
+                .content img {{ max-width: 100%; height: auto; border-radius: 4px; margin: 15px 0; }}
+                .content a {{ color: #007bff; text-decoration: none; }}
+                .content a:hover {{ text-decoration: underline; }}
+                .content pre {{ background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; }}
+                .content code {{ background: #f8f9fa; padding: 2px 4px; border-radius: 3px; font-size: 14px; }}
+                .content blockquote {{ border-left: 4px solid #007bff; padding-left: 20px; margin: 20px 0; color: #666; }}
+                .download-btn {{ background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 20px; }}
+                .download-btn:hover {{ background: #218838; text-decoration: none; color: white; }}
+            </style>
+        </head>
+        <body>
+            <a href="/" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+            
+            <div class="article-header">
+                <h1>{article.title}</h1>
+                {f'<p class="excerpt">{article.excerpt}</p>' if article.excerpt else ''}
+                <div class="article-meta">
+                    <i class="fas fa-calendar"></i> Published on {article.created_at.strftime('%B %d, %Y')}
+                    <span style="margin-left: 20px;"><i class="fas fa-user"></i> Content Hub</span>
+                </div>
+            </div>
+            
+            <div class="article-content">
+                <div class="content">
+                    {format_article_content(article.content)}
+                </div>
+                
+                <a href="/api/download/article/{article.id}" class="download-btn">
+                    <i class="fas fa-download"></i> Download as Text File
+                </a>
+            </div>
+        </body>
+        </html>
+        '''
+    except Exception as e:
+        return f"<h1>Article not found</h1><p>Error: {str(e)}</p><a href='/'>← Back to Home</a>", 404
+
+def format_article_content(content):
+    """Basic Markdown-like formatting for article content"""
+    import re
+    
+    # Replace newlines with proper HTML breaks
+    content = content.replace('\n\n', '</p><p>')
+    content = content.replace('\n', '<br>')
+    
+    # Convert **bold** to <strong>
+    content = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', content)
+    
+    # Convert *italic* to <em>
+    content = re.sub(r'\*(.*?)\*', r'<em>\1</em>', content)
+    
+    # Convert ![alt](url) to <img>
+    content = re.sub(r'!\[([^\]]*)\]\(([^)]*)\)', r'<img src="\2" alt="\1" />', content)
+    
+    # Convert [text](url) to <a>
+    content = re.sub(r'\[([^\]]*)\]\(([^)]*)\)', r'<a href="\2" target="_blank">\1</a>', content)
+    
+    # Wrap in paragraphs
+    if content and not content.startswith('<'):
+        content = f'<p>{content}</p>'
+    
+    return content
+
+@app.route('/articles')
+def articles_list():
+    """Display all published articles"""
+    try:
+        articles = TextContent.query.filter_by(is_published=True).order_by(TextContent.created_at.desc()).all()
+        
+        articles_html = ""
+        for article in articles:
+            articles_html += f'''
+            <div style="border: 1px solid #ddd; padding: 20px; margin: 15px 0; border-radius: 8px; background: white;">
+                <h3><a href="/article/{article.id}" style="text-decoration: none; color: #333;">{article.title}</a></h3>
+                <p style="color: #666; margin: 10px 0;">{article.excerpt or 'No excerpt available'}</p>
+                <div style="color: #888; font-size: 14px; margin-bottom: 15px;">
+                    <i class="fas fa-calendar"></i> {article.created_at.strftime('%B %d, %Y')}
+                </div>
+                <a href="/article/{article.id}" style="background: #007bff; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px;">
+                    Read More <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            '''
+        
+        if not articles_html:
+            articles_html = "<p style='text-align: center; color: #666; padding: 50px;'>No articles published yet.</p>"
+        
+        return f'''
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>All Articles - Content Hub</title>
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+            <style>
+                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }}
+                .header {{ background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+                h1 {{ color: #333; margin: 0; }}
+                a {{ color: #007bff; text-decoration: none; }}
+                a:hover {{ text-decoration: underline; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1><i class="fas fa-newspaper"></i> All Articles</h1>
+                <a href="/">← Back to Home</a>
+            </div>
+            {articles_html}
+        </body>
+        </html>
+        '''
+    except Exception as e:
+        return f"<h1>Error loading articles</h1><p>{str(e)}</p>"
+
+# Update your existing index route to link to articles correctly
+@app.route('/')
+def index():
+    try:
+        # Try to serve static file first
+        return send_from_directory(app.static_folder, 'index.html')
+    except:
+        # Dynamic home page with articles
+        try:
+            # Get latest articles
+            articles = TextContent.query.filter_by(is_published=True).order_by(TextContent.created_at.desc()).limit(3).all()
+            
+            articles_html = ""
+            if articles:
+                articles_html = "<h2><i class='fas fa-newspaper'></i> Latest Articles</h2><p style='color: #666; margin-bottom: 30px;'>Read our featured articles and insights</p>"
+                for article in articles:
+                    articles_html += f'''
+                    <div style="border: 1px solid #ddd; padding: 20px; margin: 15px 0; border-radius: 8px; background: white;">
+                        <h3><i class="fas fa-file-text" style="margin-right: 10px; color: #007bff;"></i>{article.title}</h3>
+                        <p style="color: #666; margin: 10px 0;">{article.excerpt or article.content[:100] + '...' if len(article.content) > 100 else article.content}</p>
+                        <div style="color: #888; font-size: 14px; margin-bottom: 15px;">
+                            {article.created_at.strftime('%d/%m/%Y')}
+                        </div>
+                        <a href="/article/{article.id}" style="background: #007bff; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px;">
+                            Read More <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                    '''
+                articles_html += f'<p style="text-align: center; margin-top: 30px;"><a href="/articles" style="color: #007bff; font-weight: bold;">View All Articles ({TextContent.query.filter_by(is_published=True).count()})</a></p>'
+            
+            # Get Supabase status
+            status = "Connected" if supabase_available else "Disconnected"
+            status_color = "#d4edda" if supabase_available else "#f8d7da"
+            status_text_color = "#155724" if supabase_available else "#721c24"
+            
+            return f'''
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Content Hub</title>
+                <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+                <style>
+                    body {{ font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f5f5f5; }}
+                    .hero {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 60px 40px; border-radius: 12px; text-align: center; margin-bottom: 40px; }}
+                    .hero h1 {{ font-size: 3rem; margin: 0 0 20px 0; }}
+                    .hero p {{ font-size: 1.3rem; opacity: 0.9; margin: 0; }}
+                    .nav-section {{ background: white; padding: 30px; border-radius: 12px; margin-bottom: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+                    .nav-buttons {{ display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }}
+                    .nav-btn {{ background: #007bff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; gap: 10px; }}
+                    .nav-btn:hover {{ background: #0056b3; transform: translateY(-2px); text-decoration: none; color: white; }}
+                    .nav-btn.documents {{ background: #28a745; }}
+                    .nav-btn.documents:hover {{ background: #1e7e34; }}
+                    .nav-btn.admin {{ background: #fd7e14; }}
+                    .nav-btn.admin:hover {{ background: #e8620e; }}
+                    .content {{ background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
+                    h2 {{ color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; display: flex; align-items: center; gap: 10px; }}
+                    .status {{ padding: 10px; border-radius: 4px; margin: 15px 0; background: {status_color}; color: {status_text_color}; }}
+                </style>
+            </head>
+            <body>
+                <div class="hero">
+                    <h1>Content Hub</h1>
+                    <p>Discover amazing videos, articles, and resources</p>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="status">
+                        <i class="fas fa-{'check-circle' if supabase_available else 'exclamation-circle'}"></i> 
+                        Supabase: {status}
+                    </div>
+                    
+                    <div class="nav-buttons">
+                        <a href="/articles" class="nav-btn">
+                            <i class="fas fa-newspaper"></i> Articles
+                        </a>
+                        <a href="/documents" class="nav-btn documents">
+                            <i class="fas fa-folder"></i> Documents
+                        </a>
+                        <a href="/admin.html?password={os.environ.get('ADMIN_PASSWORD', 'admin123')}" class="nav-btn admin">
+                            <i class="fas fa-cog"></i> Admin Panel
+                        </a>
+                        <a href="/health" class="nav-btn">
+                            <i class="fas fa-heartbeat"></i> System Health
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="content">
+                    {articles_html if articles_html else '<h2>Welcome to Content Hub</h2><p style="text-align: center; color: #666; padding: 30px;">Your content management system is ready. <a href="/admin.html">Access the admin panel</a> to start creating content.</p>'}
+                </div>
+            </body>
+            </html>
+            '''
+        except Exception as e:
+            return f"<h1>Content Hub</h1><p>Error loading page: {str(e)}</p>"
 
 @app.route('/')
 def index():
