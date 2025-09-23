@@ -257,66 +257,6 @@ def delete_file_http(filename):
         return False
 
 # Routes
-# Add this import at the top of your main.py file (with other imports)
-import re
-@app.route('/article/<int:article_id>')
-def view_article(article_id):
-    """Display individual article"""
-    try:
-        article = TextContent.query.filter_by(id=article_id, is_published=True).first()
-        if not article:
-            return "<h1>Article not found</h1><a href='/'>← Back to Home</a>", 404
-        
-        # Simple content formatting
-        content = article.content.replace('\n\n', '</p><p>')
-        content = content.replace('\n', '<br>')
-        if content and not content.startswith('<'):
-            content = f'<p>{content}</p>'
-        
-        return f'''
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>{article.title} - Content Hub</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; line-height: 1.6; }}
-                .article-header {{ background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; }}
-                .article-content {{ background: white; padding: 30px; border-radius: 8px; }}
-                .back-link {{ display: inline-block; margin-bottom: 20px; color: #007bff; text-decoration: none; }}
-                h1 {{ color: #333; margin: 0 0 15px 0; }}
-                .excerpt {{ font-size: 18px; color: #666; font-style: italic; margin-bottom: 20px; }}
-                .meta {{ color: #888; font-size: 14px; margin-bottom: 20px; }}
-                .content {{ font-size: 16px; color: #444; }}
-                .download-btn {{ background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 20px; }}
-            </style>
-        </head>
-        <body>
-            <a href="/" class="back-link">← Back to Home</a>
-            
-            <div class="article-header">
-                <h1>{article.title}</h1>
-                {f'<p class="excerpt">{article.excerpt}</p>' if article.excerpt else ''}
-                <div class="meta">
-                    Published on {article.created_at.strftime('%B %d, %Y')}
-                </div>
-            </div>
-            
-            <div class="article-content">
-                <div class="content">
-                    {content}
-                </div>
-                
-                <a href="/api/download/article/{article.id}" class="download-btn">
-                    Download as Text File
-                </a>
-            </div>
-        </body>
-        </html>
-        '''
-    except Exception as e:
-        return f"<h1>Error loading article</h1><p>{str(e)}</p><a href='/'>← Back to Home</a>", 500
 
 @app.route('/articles')
 def articles_list():
