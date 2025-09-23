@@ -12,6 +12,7 @@ from werkzeug.utils import secure_filename
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='static', static_url_path='/static')
+CORS(app, origins=["https://mehropenmind.com", "http://localhost:3000"])
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback-secret-key')
