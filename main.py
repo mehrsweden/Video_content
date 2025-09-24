@@ -687,31 +687,29 @@ def public_documents():
         doc_list = ""
         for doc in documents:
             size_mb = round(doc.file_size / (1024*1024), 2) if doc.file_size else 0
-            doc_list += f'''
-            <div style="border: 1px solid #ddd; padding: 20px; margin: 15px 0; border-radius: 8px; background: white;">
-                <h3>
-                    <a href="{doc.file_url}" target="_blank" style="color: #007cba; text-decoration: none; cursor: pointer;">
-                        📄 {doc.title}
-                    </a>
-                </h3>
-                <p style="color: #666; margin: 10px 0;">{doc.description or 'No description available'}</p>
-                <p style="color: #888; font-size: 14px;">
-                    Size: {size_mb if size_mb > 0 else 'Unknown'} MB | 
-                    Downloads: {doc.download_count} | 
-                    Added: {doc.created_at.strftime('%Y-%m-%d')}
-                </p>
-                <div style="margin-top: 15px;">
-                    <a href="{doc.file_url}" target="_blank" 
-                       style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-right: 10px; display: inline-block;">
-                        👁️ View PDF
-                    </a>
-                    <a href="/download/{doc.id}" 
-                       style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                        ⬇️ Download
-                    </a>
-                </div>
-            </div>
-            '''
+       doc_list += f'''
+<div style="border: 1px solid #ddd; padding: 20px; margin: 15px 0; border-radius: 8px; background: white;">
+    <h3>
+        <a href="{doc.file_url}" target="_blank" style="color: #007cba; text-decoration: none;">
+            📄 {doc.title}
+        </a>
+    </h3>
+    <p style="color: #666; margin: 10px 0;">{doc.description or 'No description available'}</p>
+    <p style="color: #888; font-size: 14px;">
+        Size: Unknown size | Downloads: {doc.download_count} | Added: {doc.created_at.strftime('%Y-%m-%d')}
+    </p>
+    <div style="margin-top: 15px;">
+        <a href="{doc.file_url}" target="_blank" 
+           style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-right: 10px;">
+            👁️ Read PDF
+        </a>
+        <a href="/download/{doc.id}" 
+           style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
+            ⬇️ Download
+        </a>
+    </div>
+</div>
+'''
         
         if not doc_list:
             doc_list = "<p>No documents available for download.</p>"
