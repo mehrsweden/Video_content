@@ -703,9 +703,8 @@ def public_documents():
            style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-right: 10px;">
             Read PDF
         </a>
-        <a href="/download/{doc.id}" 
-           style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
-            Download
+        <a href="{doc.file_url}" target="_blank" style="background: #28a745; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px; margin-right: 10px;">Read PDF</a>
+<a href="/download/{doc.id}" style="background: #007cba; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px;">Download</a>
         </a>
     </div>
 </div>
