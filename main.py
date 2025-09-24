@@ -640,6 +640,45 @@ def documents_api():
         print(f"Documents API error: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/admin/documents', methods=['GET'])
+def admin_documents():
+    """Get all documents for admin management"""
+    try:
+        documents = Document.query.order_by(Document.created_at.desc()).all()
+        return jsonify([{
+            'id': d.id,
+            'title': d.title,
+            'description': d.description,
+            'file_url': d.file_url,
+            'filename': d.filename,
+            'file_type': d.file_type,
+            'file_size': d.file_size,
+            'is_published': d.is_published,
+            'download_count': d.download_count,
+            'created_at': d.created_at.isoformat()
+        } for d in documents])
+    except Exception as e:
+        print(f"Admin documents error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/documents/<int:doc_id>', methods=['DELETE'])
+def delete_document(doc_id):
+    """Delete document from admin panel"""
+    try:
+        document = Document.query.get_or_404(doc_id)
+        
+        # Optionally delete file from Supabase
+        filename = document.filename
+        delete_file_http(filename)
+        
+        db.session.delete(document)
+        db.session.commit()
+        return jsonify({'message': 'Document deleted successfully'})
+        
+    except Exception as e:
+        print(f"Delete document error: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/documents')
 def public_documents():
     """Public page to view and download documents"""
