@@ -536,7 +536,8 @@ def manage_text(text_id):
                 'order_index': text.order_index,
                 'created_at': text.created_at.isoformat()
             })
-            @app.route('/api/documents', methods=['GET'])
+            
+ @app.route('/api/documents', methods=['GET'])
 def get_documents():
     """Simple documents endpoint to prevent 404 errors"""
     try:
