@@ -607,6 +607,68 @@ def not_found(e):
 def server_error(e):
     return jsonify({'error': 'Internal server error'}), 500
 
+@app.route('/api/documents', methods=['GET', 'POST'])
+def documents_api():
+    try:
+        if request.method == 'GET':
+            documents = Document.query.filter_by(is_published=True).order_by(Document.created_at.desc()).all()
+            return jsonify([{
+                'id': d.id,
+                'title': d.title,
+                'description': d.description,
+                'file_url': d.file_url,
+                'filename': d.filename,
+                'download_count': d.download_count,
+                'created_at': d.created_at.isoformat()
+            } for d in documents])
+        
+        elif request.method == 'POST':
+            data = request.get_json()
+            document = Document(
+                title=data['title'],
+                description=data.get('description'),
+                file_url=data['file_url'],
+                filename=data.get('filename', data['title']),
+                file_type=data.get('file_type'),
+                file_size=data.get('file_size'),
+                is_published=data.get('is_published', True)
+            )
+            db.session.add(document)
+            db.session.commit()
+            return jsonify({'message': 'Document created successfully'}), 201
+    except Exception as e:
+        print(f"Documents API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/documents')
+def public_documents():
+    """Public page to view and download documents"""
+    try:
+        documents = Document.query.filter_by(is_published=True).order_by(Document.created_at.desc()).all()
+        doc_list = ""
+        for doc in documents:
+            size_mb = round(doc.file_size / (1024*1024), 2) if doc.file_size else 0
+            doc_list += f'''
+            <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px;">
+                <h3>{doc.title}</h3>
+                <p>{doc.description or 'No description available'}</p>
+                <p><small>Downloads: {doc.download_count} | Added: {doc.created_at.strftime('%Y-%m-%d')}</small></p>
+                <a href="{doc.file_url}" target="_blank" style="background: #007cba; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px;">Download</a>
+            </div>
+            '''
+        
+        if not doc_list:
+            doc_list = "<p>No documents available for download.</p>"
+            
+        return f'''<!DOCTYPE html>
+        <html><head><title>Documents - Content Hub</title></head>
+        <body style="font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px;">
+            <h1>Available Documents</h1>
+            <a href="/">← Back to Home</a><hr>{doc_list}
+        </body></html>'''
+    except Exception as e:
+        return f"<h1>Error loading documents</h1><p>{str(e)}</p>"
+
 # Initialize database
 with app.app_context():
     try:
