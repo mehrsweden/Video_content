@@ -384,27 +384,36 @@ def delete_file(filename):
 @app.route('/api/process-pdf-article', methods=['POST'])
 def process_pdf_article():
     try:
+        import PyPDF2
+        import io
+        
         data = request.get_json()
         pdf_url = data['file_url']
         title = data['title']
         
-        # Download and extract text from PDF
+        # Download PDF from Supabase
         response = requests.get(pdf_url)
+        pdf_data = io.BytesIO(response.content)
         
-        # Simple text extraction (you'd need to install PyPDF2 or similar)
-        # For now, just save the URL and let user add content manually
+        # Extract text from PDF
+        pdf_reader = PyPDF2.PdfReader(pdf_data)
+        text_content = ""
+        for page in pdf_reader.pages:
+            text_content += page.extract_text() + "\n\n"
         
+        # Create article in database
         article = TextContent(
             title=title,
-            content=f"Full article content from PDF: {pdf_url}",
+            content=text_content.strip(),
             excerpt=data.get('description', ''),
             is_published=True
         )
         db.session.add(article)
         db.session.commit()
         
-        return jsonify({'message': 'Article processed successfully'})
+        return jsonify({'message': 'Article processed successfully', 'id': article.id})
     except Exception as e:
+        print(f"PDF processing error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/videos', methods=['GET', 'POST'])
