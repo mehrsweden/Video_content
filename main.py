@@ -536,6 +536,14 @@ def manage_text(text_id):
                 'order_index': text.order_index,
                 'created_at': text.created_at.isoformat()
             })
+            @app.route('/api/documents', methods=['GET'])
+def get_documents():
+    """Simple documents endpoint to prevent 404 errors"""
+    try:
+        # Return empty array for now, or implement actual document logic later
+        return jsonify([])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
         
         elif request.method == 'PUT':
             data = request.get_json()
