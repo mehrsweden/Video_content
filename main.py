@@ -669,6 +669,25 @@ def public_documents():
     except Exception as e:
         return f"<h1>Error loading documents</h1><p>{str(e)}</p>"
 
+@app.route('/download/<int:doc_id>')
+def download_document(doc_id):
+    """Handle document downloads and track download count"""
+    try:
+        document = Document.query.get_or_404(doc_id)
+        
+        if not document.is_published:
+            return "Document not available", 404
+        
+        # Increment download count
+        document.download_count += 1
+        db.session.commit()
+        
+        # Redirect to the actual file URL in Supabase
+        return redirect(document.file_url)
+        
+    except Exception as e:
+        print(f"Download document error: {e}")
+        return jsonify({'error': str(e)}), 500
 # Initialize database
 with app.app_context():
     try:
