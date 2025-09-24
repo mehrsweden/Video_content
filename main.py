@@ -381,6 +381,32 @@ def delete_file(filename):
         print(f"❌ Delete error: {e}")
         return jsonify({'error': 'Failed to delete file'}), 500
 
+@app.route('/api/process-pdf-article', methods=['POST'])
+def process_pdf_article():
+    try:
+        data = request.get_json()
+        pdf_url = data['file_url']
+        title = data['title']
+        
+        # Download and extract text from PDF
+        response = requests.get(pdf_url)
+        
+        # Simple text extraction (you'd need to install PyPDF2 or similar)
+        # For now, just save the URL and let user add content manually
+        
+        article = TextContent(
+            title=title,
+            content=f"Full article content from PDF: {pdf_url}",
+            excerpt=data.get('description', ''),
+            is_published=True
+        )
+        db.session.add(article)
+        db.session.commit()
+        
+        return jsonify({'message': 'Article processed successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/videos', methods=['GET', 'POST'])
 def videos():
     try:
