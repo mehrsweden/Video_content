@@ -650,10 +650,13 @@ def public_documents():
             size_mb = round(doc.file_size / (1024*1024), 2) if doc.file_size else 0
             doc_list += f'''
             <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px;">
-                <h3>{doc.title}</h3>
+                <h3><a href="{doc.file_url}" target="_blank" style="color: #007cba; text-decoration: none;">{doc.title}</a></h3>
                 <p>{doc.description or 'No description available'}</p>
-                <p><small>Downloads: {doc.download_count} | Added: {doc.created_at.strftime('%Y-%m-%d')}</small></p>
-                <a href="{doc.file_url}" target="_blank" style="background: #007cba; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px;">Download</a>
+                <p><small>Size: Unknown size | Downloads: {doc.download_count} | Added: {doc.created_at.strftime('%Y-%m-%d')}</small></p>
+                <div style="margin-top: 10px;">
+                    <a href="{doc.file_url}" target="_blank" style="background: #28a745; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px; margin-right: 10px;">View PDF</a>
+                    <a href="/download/{doc.id}" style="background: #007cba; color: white; padding: 8px 15px; text-decoration: none; border-radius: 3px;">Download</a>
+                </div>
             </div>
             '''
         
