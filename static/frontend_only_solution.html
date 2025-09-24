@@ -1,0 +1,186 @@
+<!-- Add this to your frontend HTML - NO BACKEND CHANGES NEEDED -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let articlesData = [];
+    
+    // Load articles from your existing working API
+    fetch('/api/texts')
+        .then(response => response.json())
+        .then(articles => {
+            articlesData = articles;
+            setupReadMoreButtons();
+        })
+        .catch(error => console.log('Articles not loaded:', error));
+    
+    function setupReadMoreButtons() {
+        // Find all "Read More" buttons and links
+        document.querySelectorAll('a, button').forEach(element => {
+            const text = element.textContent.trim();
+            
+            if (text.includes('Read More') || text.includes('read more')) {
+                // Find the article title in the same container
+                const container = element.closest('div, article, section');
+                if (container) {
+                    const titleElement = container.querySelector('h1, h2, h3, h4, .title, [class*="title"]');
+                    
+                    if (titleElement) {
+                        const title = titleElement.textContent.trim();
+                        
+                        // Find matching article
+                        const article = articlesData.find(a => 
+                            a.title === title || 
+                            title.includes(a.title) || 
+                            a.title.includes(title.substring(0, 20))
+                        );
+                        
+                        if (article) {
+                            element.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                showArticle(article);
+                            });
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function showArticle(article) {
+        // Remove any existing modal
+        const existing = document.getElementById('articleViewer');
+        if (existing) existing.remove();
+        
+        // Create article viewer (similar to how documents work)
+        const viewer = document.createElement('div');
+        viewer.id = 'articleViewer';
+        viewer.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px; overflow-y: auto;
+        `;
+        
+        const content = article.content.replace(/\n/g, '<br>');
+        
+        viewer.innerHTML = `
+            <div style="
+                background: white; max-width: 900px; width: 100%; 
+                max-height: 90vh; border-radius: 10px; overflow: hidden;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            ">
+                <!-- Header -->
+                <div style="
+                    background: #007cba; color: white; padding: 20px 30px;
+                    display: flex; justify-content: space-between; align-items: center;
+                ">
+                    <h2 style="margin: 0; font-size: 24px;">${article.title}</h2>
+                    <button onclick="closeArticle()" style="
+                        background: rgba(255,255,255,0.2); border: none; color: white;
+                        border-radius: 50%; width: 35px; height: 35px; 
+                        cursor: pointer; font-size: 18px;
+                    ">&times;</button>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 30px; overflow-y: auto; max-height: calc(90vh - 140px);">
+                    <div style="color: #666; margin-bottom: 20px; font-size: 14px;">
+                        Published: ${new Date(article.created_at).toLocaleDateString()}
+                    </div>
+                    
+                    ${article.excerpt ? `
+                        <div style="
+                            background: #f8f9fa; padding: 20px; border-radius: 8px; 
+                            margin-bottom: 25px; font-style: italic; color: #555;
+                            border-left: 4px solid #007cba;
+                        ">${article.excerpt}</div>
+                    ` : ''}
+                    
+                    <div style="
+                        line-height: 1.8; font-size: 16px; color: #333;
+                        text-align: justify;
+                    ">${content}</div>
+                    
+                    <!-- Actions -->
+                    <div style="
+                        margin-top: 40px; padding-top: 20px; 
+                        border-top: 1px solid #eee; text-align: center;
+                    ">
+                        <button onclick="downloadArticle('${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)" 
+                                style="
+                                    background: #28a745; color: white; padding: 12px 25px;
+                                    border: none; border-radius: 6px; cursor: pointer;
+                                    font-size: 16px; margin-right: 10px;
+                                ">
+                            Download Article
+                        </button>
+                        
+                        <button onclick="shareArticle('${article.title.replace(/'/g, "\\'")}', '${article.id}')" 
+                                style="
+                                    background: #6c757d; color: white; padding: 12px 25px;
+                                    border: none; border-radius: 6px; cursor: pointer;
+                                    font-size: 16px;
+                                ">
+                            Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(viewer);
+        
+        // Close on outside click
+        viewer.addEventListener('click', function(e) {
+            if (e.target === viewer) closeArticle();
+        });
+        
+        // Close on Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeArticle();
+        });
+        
+        // Prevent body scrolling
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // Global functions
+    window.closeArticle = function() {
+        const viewer = document.getElementById('articleViewer');
+        if (viewer) {
+            viewer.remove();
+            document.body.style.overflow = '';
+        }
+    };
+    
+    window.downloadArticle = function(title, content) {
+        const text = `${title}\n${'='.repeat(title.length)}\n\n${content}\n\n---\nDownloaded from mehropenmind.com`;
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+    
+    window.shareArticle = function(title, id) {
+        const url = `${window.location.origin}#article-${id}`;
+        if (navigator.share) {
+            navigator.share({ title: title, url: url });
+        } else {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Article link copied to clipboard!');
+            });
+        }
+    };
+    
+    // For testing in console
+    window.testArticle = function() {
+        if (articlesData.length > 0) {
+            showArticle(articlesData[0]);
+        } else {
+            alert('No articles loaded');
+        }
+    };
+});
+</script>
