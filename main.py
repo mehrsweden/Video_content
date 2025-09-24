@@ -359,6 +359,14 @@ def upload_file():
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
         return jsonify({'error': 'Upload failed', 'details': str(e)}), 500
+        @app.route('/api/documents', methods=['GET'])
+def get_documents():
+    """Simple documents endpoint to prevent 404 errors"""
+    try:
+        # Return empty array for now, or implement actual document logic later
+        return jsonify([])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/files', methods=['GET'])
 def list_files():
