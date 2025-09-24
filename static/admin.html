@@ -722,6 +722,49 @@ function cancelTextEdit() {
             });
         }
 
+        // Add this to your admin panel JavaScript for document management
+function loadDocuments() {
+    fetch('/api/admin/documents')
+        .then(r => r.json())
+        .then(documents => {
+            const container = document.getElementById('documentsContainer');
+            if (!container) return;
+            
+            container.innerHTML = documents.map(doc => `
+                <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px;">
+                    <h4>${doc.title}</h4>
+                    <p>${doc.description || 'No description'}</p>
+                    <p><small>Downloads: ${doc.download_count} | Published: ${doc.is_published ? 'Yes' : 'No'}</small></p>
+                    <div>
+                        <a href="${doc.file_url}" target="_blank" style="color: #007cba;">View File</a> | 
+                        <button onclick="deleteDocument(${doc.id})" style="color: red; background: none; border: none; cursor: pointer;">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        })
+        .catch(err => console.error('Error loading documents:', err));
+}
+
+function deleteDocument(id) {
+    if (confirm('Are you sure you want to delete this document?')) {
+        fetch(`/api/documents/${id}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(result => {
+                if (result.error) {
+                    alert('Error: ' + result.error);
+                } else {
+                    alert('Document deleted successfully');
+                    loadDocuments(); // Reload the list
+                }
+            })
+            .catch(err => alert('Error deleting document: ' + err.message));
+    }
+}
+
+// Add this div to your admin HTML where you want document management to appear
+// <div id="documentsContainer"></div>
+// <button onclick="loadDocuments()">Load Documents</button>
+
         // Handle video file upload in video section
         async function handleVideoFileUpload(file, fileType) {
             if (!file) return;
