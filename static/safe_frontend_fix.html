@@ -1,0 +1,223 @@
+<!-- Add this script to your main page HTML - NO BACKEND CHANGES NEEDED -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Setting up article handlers...');
+    
+    // Cache for articles data
+    let articlesData = [];
+    
+    // Load articles from your existing working API
+    function loadArticles() {
+        fetch('/api/texts')
+            .then(response => response.json())
+            .then(articles => {
+                articlesData = articles;
+                console.log('Loaded articles:', articles);
+                setupArticleHandlers();
+            })
+            .catch(error => {
+                console.error('Error loading articles:', error);
+            });
+    }
+    
+    // Set up click handlers for Read More buttons
+    function setupArticleHandlers() {
+        // Find all Read More buttons/links
+        document.querySelectorAll('a, button').forEach(element => {
+            const text = element.textContent.trim();
+            
+            if (text.includes('Read More')) {
+                console.log('Found Read More button:', element);
+                
+                // Find the article container
+                const container = element.closest('div, article, section');
+                if (container) {
+                    // Try to find article title in the container
+                    const titleElement = container.querySelector('h1, h2, h3, h4, .title, [class*="title"]');
+                    
+                    if (titleElement) {
+                        const title = titleElement.textContent.trim();
+                        console.log('Found title:', title);
+                        
+                        // Find matching article in our data
+                        const article = articlesData.find(a => 
+                            a.title === title || 
+                            title.includes(a.title) || 
+                            a.title.includes(title)
+                        );
+                        
+                        if (article) {
+                            console.log('Matched article:', article);
+                            
+                            // Set up click handler
+                            element.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                showArticleModal(article);
+                            });
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Show article in a modal (like how your documents work)
+    function showArticleModal(article) {
+        // Remove any existing modal
+        const existingModal = document.getElementById('articleModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Create modal HTML
+        const modal = document.createElement('div');
+        modal.id = 'articleModal';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        `;
+        
+        // Format content with line breaks
+        const formattedContent = article.content.replace(/\n/g, '<br>');
+        
+        modal.innerHTML = `
+            <div style="
+                background: white; 
+                max-width: 800px; 
+                width: 100%; 
+                max-height: 90vh; 
+                overflow-y: auto; 
+                border-radius: 8px; 
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            ">
+                <div style="
+                    padding: 30px; 
+                    border-bottom: 1px solid #eee; 
+                    display: flex; 
+                    justify-content: space-between; 
+                    align-items: center;
+                ">
+                    <h2 style="margin: 0; color: #333; font-size: 24px;">${article.title}</h2>
+                    <button onclick="closeArticleModal()" style="
+                        background: #f5f5f5; 
+                        border: none; 
+                        border-radius: 50%; 
+                        width: 35px; 
+                        height: 35px; 
+                        cursor: pointer; 
+                        font-size: 20px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">&times;</button>
+                </div>
+                <div style="padding: 30px;">
+                    <div style="color: #666; margin-bottom: 20px; font-size: 14px;">
+                        Published: ${new Date(article.created_at).toLocaleDateString()}
+                    </div>
+                    ${article.excerpt ? `<div style="color: #888; font-style: italic; margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 4px;">${article.excerpt}</div>` : ''}
+                    <div style="line-height: 1.8; color: #444; font-size: 16px;">
+                        ${formattedContent}
+                    </div>
+                    <div style="margin-top: 30px; text-align: center;">
+                        <button onclick="downloadArticle(${article.id}, '${article.title.replace(/'/g, "\\'")}', \`${article.content.replace(/`/g, '\\`')}\`)" 
+                                style="
+                                    background: #28a745; 
+                                    color: white; 
+                                    padding: 12px 24px; 
+                                    border: none; 
+                                    border-radius: 6px; 
+                                    cursor: pointer; 
+                                    font-size: 16px;
+                                    margin-right: 10px;
+                                ">
+                            📄 Download Article
+                        </button>
+                        <button onclick="window.print()" 
+                                style="
+                                    background: #007cba; 
+                                    color: white; 
+                                    padding: 12px 24px; 
+                                    border: none; 
+                                    border-radius: 6px; 
+                                    cursor: pointer; 
+                                    font-size: 16px;
+                                ">
+                            🖨️ Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Close on outside click
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeArticleModal();
+            }
+        });
+        
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeArticleModal();
+            }
+        });
+    }
+    
+    // Close modal function
+    window.closeArticleModal = function() {
+        const modal = document.getElementById('articleModal');
+        if (modal) {
+            modal.remove();
+        }
+    };
+    
+    // Download article function (using the same pattern as your documents)
+    window.downloadArticle = function(id, title, content) {
+        const blob = new Blob([`${title}\n${'='.repeat(title.length)}\n\n${content}\n\nDownloaded from mehropenmind.com`], 
+                             { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${title.replace(/[^a-zA-Z0-9]/g, '_')}_${id}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    };
+    
+    // Manual function to open article by ID (for testing)
+    window.openArticle = function(id) {
+        const article = articlesData.find(a => a.id === id);
+        if (article) {
+            showArticleModal(article);
+        } else {
+            alert('Article not found');
+        }
+    };
+    
+    // Initialize
+    loadArticles();
+    
+    console.log('Article system ready');
+});
+
+// For debugging - test in browser console
+window.testArticles = function() {
+    fetch('/api/texts')
+        .then(r => r.json())
+        .then(articles => {
+            console.log('Available articles:', articles);
+            if (articles.length > 0) {
+                console.log('Opening first article...');
+                window.openArticle(articles[0].id);
+            }
+        });
+};
+</script>
