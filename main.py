@@ -253,9 +253,9 @@ def index():
         return f'''
         <!DOCTYPE html>
         <html>
-        <head><title>Content Hub</title></head>
+        <head><title>Mehr Open Mind</title></head>
         <body>
-            <h1>Content Hub</h1>
+            <h1>Mehr Open Mind</h1>
             <p>Status: {status}</p>
             <a href="/admin.html">Go to Admin Panel</a>
             <br><a href="/health">Check Health</a>
