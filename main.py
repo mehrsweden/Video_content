@@ -705,10 +705,7 @@ def public_documents():
                        style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-right: 10px; display: inline-block;">
                          View PDF
                     </a>
-                    <a href="/download/{doc.id}" 
-                       style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                         Download
-                    </a>
+                   <a href="{doc.file_url}" target="_blank" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Read More</a>
                 </div>
             </div>
             '''     
