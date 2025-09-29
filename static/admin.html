@@ -736,7 +736,7 @@ function loadDocuments() {
                     <p>${doc.description || 'No description'}</p>
                     <p><small>Downloads: ${doc.download_count} | Published: ${doc.is_published ? 'Yes' : 'No'}</small></p>
                     <div>
-                        <a href="${doc.file_url}" target="_blank" style="color: #007cba;">View File</a> | 
+                    <a href="/view/${doc.id}">Preview Document</a>| 
                         <button onclick="deleteDocument(${doc.id})" style="color: red; background: none; border: none; cursor: pointer;">Delete</button>
                     </div>
                 </div>
