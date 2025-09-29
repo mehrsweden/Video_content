@@ -400,9 +400,7 @@
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-xs text-gray-400">${new Date(doc.created_at).toLocaleDateString()}</span>
-                                <a href="/download/${doc.id}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm transition-colors">
-                                    <i class="fas fa-download mr-2"></i>Download
-                                </a>
+                               <a href="${doc.file_url}" target="_blank" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Read More</a>
                             </div>
                         </div>
                     </div>
