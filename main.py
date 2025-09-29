@@ -127,21 +127,23 @@ def upload_to_supabase_http(file_data, filename, content_type):
     try:
         print(f"📤 Uploading {filename} via HTTP...")
         
-        # Supabase Storage upload endpoint
         upload_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{filename}"
         
         headers = {
             "Authorization": f"Bearer {SUPABASE_KEY}",
             "Content-Type": content_type,
+            "x-upsert": "true"  # Add this to allow updates
         }
         
-        # Upload file
-        response = requests.post(upload_url, data=file_data, headers=headers, timeout=60)
+        # For PDFs, add cache control to force inline viewing
+        if content_type == "application/pdf":
+            headers["Cache-Control"] = "public, max-age=3600"
+        
+        response = requests.post(upload_url, data=file_data, headers=headers, timeout=300)
         
         print(f"📊 Upload response: {response.status_code}")
         
         if response.status_code == 200:
-            # Get public URL
             public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{filename}"
             print(f"✅ Upload successful: {public_url}")
             return public_url
