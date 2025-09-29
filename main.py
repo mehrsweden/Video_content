@@ -681,61 +681,58 @@ def delete_document(doc_id):
 
 @app.route('/documents')
 def public_documents():
-    """Public page to view and download documents"""
+    """Public page to view documents"""
     try:
         documents = Document.query.filter_by(is_published=True).order_by(Document.created_at.desc()).all()
         doc_list = ""
         for doc in documents:
             size_mb = round(doc.file_size / (1024*1024), 2) if doc.file_size else 0
+            # Add inline parameter to force viewing instead of downloading
+            view_url = f"{doc.file_url}?inline=true"
+            
             doc_list += f'''
             <div style="border: 1px solid #ddd; padding: 20px; margin: 15px 0; border-radius: 8px; background: white;">
                 <h3>
-                    <a href="{doc.file_url}" target="_blank" style="color: #007cba; text-decoration: none; cursor: pointer;">
-                         {doc.title}
+                    <a href="{view_url}" target="_blank" style="color: #007cba; text-decoration: none; cursor: pointer;">
+                        📄 {doc.title}
                     </a>
                 </h3>
                 <p style="color: #666; margin: 10px 0;">{doc.description or 'No description available'}</p>
                 <p style="color: #888; font-size: 14px;">
                     Size: {size_mb if size_mb > 0 else 'Unknown'} MB | 
-                    Downloads: {doc.download_count} | 
+                    Views: {doc.download_count} | 
                     Added: {doc.created_at.strftime('%Y-%m-%d')}
                 </p>
                 <div style="margin-top: 15px;">
-                    <a href="{doc.file_url}" target="_blank" 
-                       style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-right: 10px; display: inline-block;">
-                         View PDF
+                    <a href="{view_url}" target="_blank" 
+                       style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                        Read More
                     </a>
-                   <a href="{doc.file_url}" target="_blank" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Read More</a>
                 </div>
             </div>
-            '''     
+            '''
         
         if not doc_list:
-            doc_list = "<p>No documents available for download.</p>"
+            doc_list = "<p>No documents available.</p>"
             
         return f'''<!DOCTYPE html>
         <html>
         <head>
-            <title>Documents - Content Hub</title>
+            <title>Documents - Mehr Open Mind</title>
             <style>
                 body {{ font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: #f5f5f5; }}
                 h1 {{ color: #333; text-align: center; }}
-                .back-link {{ color: #007cba; text-decoration: none; font-weight: bold; }}
-                .back-link:hover {{ text-decoration: underline; }}
             </style>
         </head>
         <body>
-            <h1> Available Documents</h1>
-            <p style="text-align: center;">
-                <a href="/" class="back-link">← Back to Home</a>
-            </p>
+            <h1>📋 Documents</h1>
+            <p style="text-align: center;"><a href="/" style="color: #007cba; text-decoration: none;">← Back to Home</a></p>
             <hr>
             {doc_list}
         </body>
         </html>'''
     except Exception as e:
         return f"<h1>Error loading documents</h1><p>{str(e)}</p>"
-
 @app.route('/download/<int:doc_id>')
 def download_document(doc_id):
     """Handle document downloads and track download count"""
