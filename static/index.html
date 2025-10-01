@@ -169,7 +169,10 @@ function openArticleModal(articleId) {
 
 // Add this new download function
 function downloadCurrentArticle() {
-    if (!currentArticleData) return;
+    if (!currentArticleData) {
+            alert('No article loaded');
+            return;
+        }
     
     const text = `${currentArticleData.title}\n${'='.repeat(currentArticleData.title.length)}\n\n${currentArticleData.content}\n\n---\nDownloaded from mehropenmind.com`;
     const blob = new Blob([text], { type: 'text/plain' });
