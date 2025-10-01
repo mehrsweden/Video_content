@@ -440,7 +440,7 @@
             if (!article) return;
 
             document.getElementById('modal-article-title').textContent = article.title;
-            document.getElementById('modal-article-content').textContent = article.content;
+            document.getElementById('modal-article-content').textContent = article.content || 'No description available';
             document.getElementById('modal-article').src = article.article_url;
             
             articleModal.classList.remove('hidden');
