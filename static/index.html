@@ -144,6 +144,43 @@
                     </button>
                 </div>
                 <div id="modal-article-content" class="prose max-w-none text-gray-700 leading-relaxed whitespace-pre-line"></div>
+                <!-- Add this button in your article modal, near the close button -->
+<button onclick="downloadCurrentArticle()" 
+        style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+    Download Article
+</button>
+
+<!-- Add this script in your index.html -->
+<script>
+let currentArticleData = null;
+
+// Update your existing openArticleModal function to store the article data
+function openArticleModal(articleId) {
+    const article = currentArticles.find(a => a.id === articleId);
+    if (!article) return;
+    
+    currentArticleData = article; // Store for download
+    
+    document.getElementById('modal-article-title').textContent = article.title;
+    document.getElementById('modal-article-content').textContent = article.content;
+    
+    articleModal.classList.remove('hidden');
+}
+
+// Add this new download function
+function downloadCurrentArticle() {
+    if (!currentArticleData) return;
+    
+    const text = `${currentArticleData.title}\n${'='.repeat(currentArticleData.title.length)}\n\n${currentArticleData.content}\n\n---\nDownloaded from mehropenmind.com`;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentArticleData.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+</script>
             </div>
         </div>
     </div>
