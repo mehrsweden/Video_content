@@ -173,15 +173,19 @@ function downloadCurrentArticle() {
             alert('No article loaded');
             return;
         }
-    
-    const text = `${currentArticleData.title}\n${'='.repeat(currentArticleData.title.length)}\n\n${currentArticleData.content}\n\n---\nDownloaded from mehropenmind.com`;
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${currentArticleData.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+     const text = currentArticleData.title + '\n' + 
+                     '='.repeat(currentArticleData.title.length) + '\n\n' +
+                     currentArticleData.content + '\n\n---\nDownloaded from mehropenmind.com';
+        
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = currentArticleData.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_') + '.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);   
 }
 </script>
             </div>
