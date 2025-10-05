@@ -429,16 +429,21 @@
             videoModal.classList.remove('hidden');
         }
 
-        // Open article modal
-        function openArticleModal(articleId) {
-            const article = currentArticles.find(a => a.id === articleId);
-            if (!article) return;
-            
-            document.getElementById('modal-article-title').textContent = article.title;
-            document.getElementById('modal-article-content').textContent = article.content;
-            
-            articleModal.classList.remove('hidden');
-        }
+      // Open article modal
+function openArticleModal(articleId) {
+    const article = currentArticles.find(a => a.id === articleId);
+    if (!article) return;
+    
+    // DEBUG: Log the article data to console
+    console.log('Article data:', article);
+    console.log('Article content:', article.content);
+    console.log('Article content length:', article.content ? article.content.length : 0);
+    
+    document.getElementById('modal-article-title').textContent = article.title;
+    document.getElementById('modal-article-content').textContent = article.content || 'No content available';
+    
+    articleModal.classList.remove('hidden');
+}
     </script>
 </body>
 </html>
