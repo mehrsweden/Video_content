@@ -585,6 +585,7 @@ def manage_text(text_id):
             text.title = data.get('title', text.title)
             text.content = data.get('content', text.content)
             text.excerpt = data.get('excerpt', text.excerpt)
+            text.file_url = data.get('file_url', text.file_url)  # ADD THIS LINE
             text.is_published = data.get('is_published', text.is_published)
             text.order_index = data.get('order_index', text.order_index)
             db.session.commit()
