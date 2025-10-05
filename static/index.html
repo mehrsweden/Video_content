@@ -145,33 +145,6 @@
             </div>
         </div>
     </div>
-    // Open article modal
-function openArticleModal(articleId) {
-    const article = currentArticles.find(a => a.id === articleId);
-    if (!article) return;
-    
-    // DEBUG: Check what data we have
-    console.log('Article data:', article);
-    console.log('File URL:', article.file_url);
-    
-    document.getElementById('modal-article-title').textContent = article.title;
-    document.getElementById('modal-article-content').textContent = article.content;
-    
-    const downloadLink = document.getElementById('download-article-link');
-    if (article.file_url) {
-        downloadLink.href = article.file_url;
-        downloadLink.download = '';
-        downloadLink.target = '_blank';
-    } else {
-        const text = article.title + '\n' + '='.repeat(article.title.length) + '\n\n' + article.content + '\n\n---\nDownloaded from mehropenmind.com';
-        const blob = new Blob([text], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        downloadLink.href = url;
-        downloadLink.download = article.title.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_') + '.txt';
-    }
-    
-    articleModal.classList.remove('hidden');
-}
 
     <!-- Empty State -->
     <div id="empty-state" class="container mx-auto px-6 py-20 text-center hidden">
