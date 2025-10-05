@@ -79,6 +79,7 @@ class TextContent(db.Model):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
     excerpt = db.Column(db.Text)
+    file_url = db.Column(db.String(500))  # ADD THIS LINE
     is_published = db.Column(db.Boolean, default=True)
     order_index = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
