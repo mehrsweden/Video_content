@@ -527,6 +527,7 @@ def texts():
                 'title': t.title,
                 'content': t.content,
                 'excerpt': t.excerpt,
+                'file_url': t.file_url,  # ADD THIS LINE
                 'created_at': t.created_at.isoformat()
             } for t in texts])
         
@@ -536,6 +537,7 @@ def texts():
                 title=data['title'],
                 content=data['content'],
                 excerpt=data.get('excerpt'),
+                file_url=data.get('file_url'),  # ADD THIS LINE
                 is_published=data.get('is_published', True),
                 order_index=data.get('order_index', 0)
             )
@@ -555,6 +557,7 @@ def admin_texts():
             'title': t.title,
             'content': t.content,
             'excerpt': t.excerpt,
+            'file_url': t.file_url,  # ADD THIS LINE
             'is_published': t.is_published,
             'order_index': t.order_index,
             'created_at': t.created_at.isoformat()
@@ -574,6 +577,7 @@ def manage_text(text_id):
                 'title': text.title,
                 'content': text.content,
                 'excerpt': text.excerpt,
+                'file_url': text.file_url,  # ADD THIS LINE
                 'is_published': text.is_published,
                 'order_index': text.order_index,
                 'created_at': text.created_at.isoformat()
@@ -584,6 +588,7 @@ def manage_text(text_id):
             text.title = data.get('title', text.title)
             text.content = data.get('content', text.content)
             text.excerpt = data.get('excerpt', text.excerpt)
+            text.file_url = data.get('file_url', text.file_url)  # ADD THIS LINE
             text.is_published = data.get('is_published', text.is_published)
             text.order_index = data.get('order_index', text.order_index)
             db.session.commit()
