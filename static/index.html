@@ -323,40 +323,38 @@
                 </div>
             `).join('');
         }
+        
+// Render articles - now with file_url support
+function renderArticles(articles) {
+    if (articles.length === 0) {
+        articlesGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-12">No articles available</div>';
+        return;
+    }
 
-        // Render articles - now with file_url support
-        function renderArticles(articles) {
-            if (articles.length === 0) {
-                articlesGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-12">No articles available</div>';
-                return;
-            }
-
-            articlesGrid.innerHTML = articles.map(article => {
-                // Check if article has a file_url (PDF) or just text content
-                const hasFile = article.file_url && article.file_url.trim() !== '';
-                
-                return `
-                    <div class="bg-white rounded-lg shadow-lg overflow-hidden hover-scale fade-in">
-                        <div class="p-6">
-                            <div class="flex items-center mb-3">
-                                <i class="fas fa-file-text text-blue-500 text-2xl mr-3"></i>
-                                <h3 class="text-xl font-bold text-gray-800">${article.title}</h3>
-                            </div>
-                            <p class="text-gray-600 text-sm line-clamp-4 mb-4">${article.excerpt || article.content?.substring(0, 150) + '...' || 'No preview available'}</p>
-                            <div class="flex justify-between items-center">
-                                <span class="text-xs text-gray-400">${new Date(article.created_at).toLocaleDateString()}</span>
-                                ${hasFile ? 
-                                    `<a href="${article.file_url}" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors">
-                                        Read More →
-                                    </a>` :
-                                    `<span class="text-gray-400 text-sm">Text only</span>`
-                                }
-                            </div>
-                        </div>
+    articlesGrid.innerHTML = articles.map(article => {
+        // Check if article has a file_url (PDF) or just text content
+        const hasFile = article.file_url && article.file_url.trim() !== '';
+        
+        return `
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden hover-scale fade-in ${hasFile ? 'cursor-pointer' : ''}" ${hasFile ? `onclick="window.open('${article.file_url}', '_blank')"` : ''}>
+                <div class="p-6">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-file-text text-blue-500 text-2xl mr-3"></i>
+                        <h3 class="text-xl font-bold text-gray-800">${article.title}</h3>
                     </div>
-                `;
-            }).join('');
-        }
+                    <p class="text-gray-600 text-sm line-clamp-4 mb-4">${article.excerpt || article.content?.substring(0, 150) + '...' || 'No preview available'}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-400">${new Date(article.created_at).toLocaleDateString()}</span>
+                        ${hasFile ? 
+                            `<span class="text-blue-500 text-sm font-medium">Read More →</span>` :
+                            `<span class="text-gray-400 text-sm italic">No file available</span>`
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
         // Render documents
         function renderDocuments(documents) {
