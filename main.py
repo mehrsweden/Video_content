@@ -574,6 +574,7 @@ def manage_text(text_id):
                 'title': text.title,
                 'content': text.content,
                 'excerpt': text.excerpt,
+                'file_url': text.file_url,  # ADD THIS LINE
                 'is_published': text.is_published,
                 'order_index': text.order_index,
                 'created_at': text.created_at.isoformat()
