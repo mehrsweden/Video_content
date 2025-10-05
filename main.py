@@ -554,6 +554,7 @@ def admin_texts():
             'title': t.title,
             'content': t.content,
             'excerpt': t.excerpt,
+            'file_url': t.file_url,  # ADD THIS LINE
             'is_published': t.is_published,
             'order_index': t.order_index,
             'created_at': t.created_at.isoformat()
