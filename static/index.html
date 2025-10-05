@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Hub - Admin Panel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .file-drop-zone {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+        .file-drop-zone.dragover {
+            border-color: #3182ce;
+            background-color: #ebf8ff;
+        }
+        .thumbnail-preview {
+            max-width: 200px;
+            max-height: 150px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Content Hub - Admin Panel</h1>
+                <div class="flex space-x-4">
+                    <a href="/documents" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded transition-colors">
+                        <i class="fas fa-download mr-2"></i>View Documents
+                    </a>
+                    <a href="/" class="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded transition-colors">
+                        <i class="fas fa-eye mr-2"></i>View Site
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md">
+        <div class="container mx-auto px-6">
+            <div class="flex space-x-8 py-4">
+                <button id="videos-tab" class="nav-btn px-4 py-2 rounded font-semibold transition-all duration-300 bg-blue-500 text-white">
+                    <i class="fas fa-video mr-2"></i>Videos
+                </button>
+                <button id="texts-tab" class="nav-btn px-4 py-2 rounded font-semibold transition-all duration-300 text-gray-600 hover:text-blue-500">
+                    <i class="fas fa-file-text mr-2"></i>Articles
+                </button>
+                <button id="documents-tab" class="nav-btn px-4 py-2 rounded font-semibold transition-all duration-300 text-gray-600 hover:text-blue-500">
+                    <i class="fas fa-file-download mr-2"></i>Documents
+                </button>
+                <button id="files-tab" class="nav-btn px-4 py-2 rounded font-semibold transition-all duration-300 text-gray-600 hover:text-blue-500">
+                    <i class="fas fa-folder mr-2"></i>File Manager
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Videos Management Section -->
+    <section id="videos-section" class="container mx-auto px-6 py-8">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold mb-4">Add New Video</h2>
+            
+            <!-- File Upload Section -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3">Upload Video File</h3>
+                <div id="video-drop-zone" class="file-drop-zone p-8 text-center rounded-lg cursor-pointer">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Drag and drop a video file here, or click to select</p>
+                    <p class="text-sm text-gray-500">Supported formats: MP4, MOV, AVI, WMV, FLV, MKV, WEBM, M4V</p>
+                    <input type="file" id="video-file-input" accept="video/*" class="hidden">
+                </div>
+                <div id="video-upload-progress" class="hidden mt-4">
+                    <div class="bg-gray-200 rounded-full h-2">
+                        <div id="video-progress-bar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="video-upload-status" class="text-sm text-gray-600 mt-2">Uploading...</p>
+                </div>
+            </div>
+
+            <form id="video-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                    <input type="text" id="video-title" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Video URL *</label>
+                    <input type="url" id="video-url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Thumbnail URL</label>
+                    <input type="url" id="video-thumbnail" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Order Index</label>
+                    <input type="number" id="video-order" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="0">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="video-description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div class="md:col-span-2" id="thumbnail-preview-container" style="display: none;">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Thumbnail Preview</label>
+                    <img id="thumbnail-preview" class="thumbnail-preview rounded border" alt="Thumbnail preview">
+                </div>
+                <div class="md:col-span-2 flex items-center">
+                    <input type="checkbox" id="video-published" class="mr-2" checked>
+                    <label for="video-published" class="text-sm font-medium text-gray-700">Published</label>
+                </div>
+                <div class="md:col-span-2">
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Add Video
+                    </button>
+                    <button type="button" id="cancel-video-edit" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition-colors ml-2 hidden">
+                        Cancel Edit
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">Manage Videos</h2>
+            <div id="videos-list" class="space-y-4">
+                <!-- Videos will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Texts Management Section -->
+    <section id="texts-section" class="container mx-auto px-6 py-8 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold mb-4">Add New Article</h2>
+            
+            <!-- File Upload Section for Articles -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3">Upload Article File (PDF)</h3>
+                <div id="text-drop-zone" class="file-drop-zone p-8 text-center rounded-lg cursor-pointer">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Drag and drop an article file here, or click to select</p>
+                    <p class="text-sm text-gray-500">Supported formats: PDF, DOC, DOCX</p>
+                    <input type="file" id="text-file-input" accept=".pdf,.doc,.docx" class="hidden">
+                </div>
+                <div id="text-upload-progress" class="hidden mt-4">
+                    <div class="bg-gray-200 rounded-full h-2">
+                        <div id="text-progress-bar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="text-upload-status" class="text-sm text-gray-600 mt-2">Uploading...</p>
+                </div>
+            </div>
+
+            <form id="text-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                        <input type="text" id="text-title" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">File URL</label>
+                        <input type="url" id="text-file-url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Auto-filled after upload">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Excerpt</label>
+                    <textarea id="text-excerpt" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Brief summary of the article"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Content (optional - for text-only articles)</label>
+                    <textarea id="text-content" rows="8" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Order Index</label>
+                    <input type="number" id="text-order" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="0">
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="text-published" class="mr-2" checked>
+                    <label for="text-published" class="text-sm font-medium text-gray-700">Published</label>
+                </div>
+                <div>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Add Article
+                    </button>
+                    <button type="button" id="cancel-text-edit" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition-colors ml-2 hidden">
+                        Cancel Edit
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">Manage Articles</h2>
+            <div id="texts-list" class="space-y-4">
+                <!-- Texts will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Documents Management Section -->
+    <section id="documents-section" class="container mx-auto px-6 py-8 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold mb-4">Add New Document</h2>
+            
+            <!-- Document Upload Section -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold mb-3">Upload Document File</h3>
+                <div id="document-drop-zone" class="file-drop-zone p-8 text-center rounded-lg cursor-pointer">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Drag and drop a document here, or click to select</p>
+                    <p class="text-sm text-gray-500">Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, RAR</p>
+                    <input type="file" id="document-file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar" class="hidden">
+                </div>
+                <div id="document-upload-progress" class="hidden mt-4">
+                    <div class="bg-gray-200 rounded-full h-2">
+                        <div id="document-progress-bar" class="bg-green-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="document-upload-status" class="text-sm text-gray-600 mt-2">Uploading...</p>
+                </div>
+            </div>
+
+            <form id="document-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                    <input type="text" id="document-title" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">File URL *</label>
+                    <input type="url" id="document-url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="document-description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="What is this document about?"></textarea>
+                </div>
+                <div class="md:col-span-2 flex items-center">
+                    <input type="checkbox" id="document-published" class="mr-2" checked>
+                    <label for="document-published" class="text-sm font-medium text-gray-700">Published (visible on /documents page)</label>
+                </div>
+                <div class="md:col-span-2">
+                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Add Document
+                    </button>
+                    <button type="button" id="cancel-document-edit" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition-colors ml-2 hidden">
+                        Cancel Edit
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">Manage Documents</h2>
+            <div id="documents-list" class="space-y-4">
+                <!-- Documents will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- File Manager Section -->
+    <section id="files-section" class="container mx-auto px-6 py-8 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold mb-4">Upload Files</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Video Upload -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Upload Video</h3>
+                    <div id="file-video-drop-zone" class="file-drop-zone p-6 text-center rounded-lg cursor-pointer">
+                        <i class="fas fa-video text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-sm text-gray-600">Drop video file here</p>
+                        <input type="file" id="file-video-input" accept="video/*" class="hidden">
+                    </div>
+                </div>
+
+                <!-- Image Upload -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Upload Image</h3>
+                    <div id="file-image-drop-zone" class="file-drop-zone p-6 text-center rounded-lg cursor-pointer">
+                        <i class="fas fa-image text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-sm text-gray-600">Drop image file here</p>
+                        <input type="file" id="file-image-input" accept="image/*" class="hidden">
+                    </div>
+                </div>
+
+                <!-- Document Upload -->
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">Upload Document</h3>
+                    <div id="file-document-drop-zone" class="file-drop-zone p-6 text-center rounded-lg cursor-pointer">
+                        <i class="fas fa-file-alt text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-sm text-gray-600">Drop document here</p>
+                        <input type="file" id="file-document-input" accept=".pdf,.doc,.docx,.txt,.md" class="hidden">
+                    </div>
+                </div>
+            </div>
+
+            <div id="file-upload-progress" class="hidden mt-6">
+                <div class="bg-gray-200 rounded-full h-2">
+                    <div id="file-progress-bar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+                <p id="file-upload-status" class="text-sm text-gray-600 mt-2">Uploading...</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">File Manager</h2>
+            <div id="files-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Files will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Global variables
+        let currentVideos = [];
+        let currentTexts = [];
+        let currentFiles = [];
+        let currentDocuments = [];
+        let editingVideoId = null;
+        let editingTextId = null;
+        let editingDocumentId = null;
+
+        // DOM elements
+        const videosTab = document.getElementById('videos-tab');
+        const textsTab = document.getElementById('texts-tab');
+        const documentsTab = document.getElementById('documents-tab');
+        const filesTab = document.getElementById('files-tab');
+        const videosSection = document.getElementById('videos-section');
+        const textsSection = document.getElementById('texts-section');
+        const documentsSection = document.getElementById('documents-section');
+        const filesSection = document.getElementById('files-section');
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVideos();
+            setupEventListeners();
+            setupFileUpload();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            videosTab.addEventListener('click', () => switchTab('videos'));
+            textsTab.addEventListener('click', () => switchTab('texts'));
+            documentsTab.addEventListener('click', () => switchTab('documents'));
+            filesTab.addEventListener('click', () => switchTab('files'));
+            
+            document.getElementById('video-form').addEventListener('submit', handleVideoSubmit);
+            document.getElementById('text-form').addEventListener('submit', handleTextSubmit);
+            document.getElementById('document-form').addEventListener('submit', handleDocumentSubmit);
+            
+            document.getElementById('cancel-video-edit').addEventListener('click', cancelVideoEdit);
+            document.getElementById('cancel-text-edit').addEventListener('click', cancelTextEdit);
+            document.getElementById('cancel-document-edit').addEventListener('click', cancelDocumentEdit);
+
+            // Thumbnail preview
+            document.getElementById('video-thumbnail').addEventListener('input', updateThumbnailPreview);
+        }
+
+        // Setup file upload functionality
+        function setupFileUpload() {
+            // Video upload in video section
+            setupDropZone('video-drop-zone', 'video-file-input', 'video', handleVideoFileUpload);
+            
+            // Article upload in article section
+            setupDropZone('text-drop-zone', 'text-file-input', 'document', handleTextFileUpload);
+            
+            // Document upload in document section
+            setupDropZone('document-drop-zone', 'document-file-input', 'document', handleDocumentFileUpload);
+            
+            // File manager uploads
+            setupDropZone('file-video-drop-zone', 'file-video-input', 'video', handleFileUpload);
+            setupDropZone('file-image-drop-zone', 'file-image-input', 'image', handleFileUpload);
+            setupDropZone('file-document-drop-zone', 'file-document-input', 'document', handleFileUpload);
+        }
+
+        // Setup drag and drop zone
+        function setupDropZone(dropZoneId, inputId, fileType, handler) {
+            const dropZone = document.getElementById(dropZoneId);
+            const fileInput = document.getElementById(inputId);
+
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => handler(e.target.files[0], fileType));
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handler(files[0], fileType);
+                }
+            });
+        }
+
+        // Handle video file upload in video section
+        async function handleVideoFileUpload(file, fileType) {
+            if (!file) return;
+
+            const progressContainer = document.getElementById('video-upload-progress');
+            const progressBar = document.getElementById('video-progress-bar');
+            const statusText = document.getElementById('video-upload-status');
+
+            progressContainer.classList.remove('hidden');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', fileType);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('video-url').value = result.url;
+                    if (result.thumbnail_url) {
+                        document.getElementById('video-thumbnail').value = result.thumbnail_url;
+                        updateThumbnailPreview();
+                    }
+                    statusText.textContent = 'Upload completed successfully!';
+                    progressBar.style.width = '100%';
+                    
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                        progressBar.style.width = '0%';
+                    }, 2000);
+                } else {
+                    throw new Error('Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                statusText.textContent = 'Upload failed. Please try again.';
+                statusText.classList.add('text-red-600');
+            }
+        }
+
+        // Handle article/text file upload
+        async function handleTextFileUpload(file, fileType) {
+            if (!file) return;
+
+            const progressContainer = document.getElementById('text-upload-progress');
+            const progressBar = document.getElementById('text-progress-bar');
+            const statusText = document.getElementById('text-upload-status');
+
+            progressContainer.classList.remove('hidden');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', 'document');
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('text-file-url').value = result.url;
+                    if (!document.getElementById('text-title').value) {
+                        document.getElementById('text-title').value = result.original_name.replace(/\.[^/.]+$/, "");
+                    }
+                    statusText.textContent = 'Upload completed successfully!';
+                    progressBar.style.width = '100%';
+                    
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                        progressBar.style.width = '0%';
+                    }, 2000);
+                } else {
+                    throw new Error('Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                statusText.textContent = 'Upload failed. Please try again.';
+                statusText.classList.add('text-red-600');
+            }
+        }
+
+        // Handle document file upload in document section
+        async function handleDocumentFileUpload(file, fileType) {
+            if (!file) return;
+
+            const progressContainer = document.getElementById('document-upload-progress');
+            const progressBar = document.getElementById('document-progress-bar');
+            const statusText = document.getElementById('document-upload-status');
+
+            progressContainer.classList.remove('hidden');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', fileType);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('document-url').value = result.url;
+                    document.getElementById('document-title').value = result.original_name;
+                    statusText.textContent = 'Upload completed successfully!';
+                    progressBar.style.width = '100%';
+                    
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                        progressBar.style.width = '0%';
+                    }, 2000);
+                } else {
+                    throw new Error('Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                statusText.textContent = 'Upload failed. Please try again.';
+                statusText.classList.add('text-red-600');
+            }
+        }
+
+        // Handle file upload in file manager
+        async function handleFileUpload(file, fileType) {
+            if (!file) return;
+
+            const progressContainer = document.getElementById('file-upload-progress');
+            const progressBar = document.getElementById('file-progress-bar');
+            const statusText = document.getElementById('file-upload-status');
+
+            progressContainer.classList.remove('hidden');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', fileType);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    statusText.textContent = 'Upload completed successfully!';
+                    progressBar.style.width = '100%';
+                    
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                        progressBar.style.width = '0%';
+                        loadFiles();
+                    }, 2000);
+                } else {
+                    throw new Error('Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                statusText.textContent = 'Upload failed. Please try again.';
+                statusText.classList.add('text-red-600');
+            }
+        }
+
+        // Update thumbnail preview
+        function updateThumbnailPreview() {
+            const thumbnailUrl = document.getElementById('video-thumbnail').value;
+            const previewContainer = document.getElementById('thumbnail-preview-container');
+            const previewImg = document.getElementById('thumbnail-preview');
+
+            if (thumbnailUrl) {
+                previewImg.src = thumbnailUrl;
+                previewContainer.style.display = 'block';
+            } else {
+                previewContainer.style.display = 'none';
+            }
+        }
+
+        // Switch between tabs
+        function switchTab(tab) {
+            // Reset all tabs
+            [videosTab, textsTab, documentsTab, filesTab].forEach(t => {
+                t.classList.remove('bg-blue-500', 'text-white');
+                t.classList.add('text-gray-600');
+            });
+            [videosSection, textsSection, documentsSection, filesSection].forEach(s => {
+                s.classList.add('hidden');
+            });
+
+            if (tab === 'videos') {
+                videosTab.classList.add('bg-blue-500', 'text-white');
+                videosTab.classList.remove('text-gray-600');
+                videosSection.classList.remove('hidden');
+                if (currentVideos.length === 0) loadVideos();
+            } else if (tab === 'texts') {
+                textsTab.classList.add('bg-blue-500', 'text-white');
+                textsTab.classList.remove('text-gray-600');
+                textsSection.classList.remove('hidden');
+                if (currentTexts.length === 0) loadTexts();
+            } else if (tab === 'documents') {
+                documentsTab.classList.add('bg-blue-500', 'text-white');
+                documentsTab.classList.remove('text-gray-600');
+                documentsSection.classList.remove('hidden');
+                loadDocuments();
+            } else if (tab === 'files') {
+                filesTab.classList.add('bg-blue-500', 'text-white');
+                filesTab.classList.remove('text-gray-600');
+                filesSection.classList.remove('hidden');
+                loadFiles();
+            }
+        }
+
+        // Load videos from API
+        async function loadVideos() {
+            try {
+                const response = await fetch('/api/admin/videos');
+                const videos = await response.json();
+                currentVideos = videos;
+                renderVideosList(videos);
+            } catch (error) {
+                console.error('Error loading videos:', error);
+            }
+        }
+
+        // Load texts from API
+        async function loadTexts() {
+            try {
+                const response = await fetch('/api/admin/texts');
+                const texts = await response.json();
+                currentTexts = texts;
+                renderTextsList(texts);
+            } catch (error) {
+                console.error('Error loading texts:', error);
+            }
+        }
+
+        // Load documents from API
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/api/admin/documents');
+                const documents = await response.json();
+                currentDocuments = documents;
+                renderDocumentsList(documents);
+            } catch (error) {
+                console.error('Error loading documents:', error);
+            }
+        }
+
+        // Load files from API
+        async function loadFiles() {
+            try {
+                const response = await fetch('/api/files');
+                const files = await response.json();
+                currentFiles = files;
+                renderFilesList(files);
+            } catch (error) {
+                console.error('Error loading files:', error);
+            }
+        }
+
+        // Handle video form submission
+        function handleVideoSubmit(e) {
+            e.preventDefault();
+            
+            const videoData = {
+                title: document.getElementById('video-title').value,
+                description: document.getElementById('video-description').value,
+                video_url: document.getElementById('video-url').value,
+                thumbnail_url: document.getElementById('video-thumbnail').value,
+                is_published: document.getElementById('video-published').checked,
+                order_index: parseInt(document.getElementById('video-order').value) || 0
+            };
+
+            fetch(editingVideoId ? `/api/videos/${editingVideoId}` : '/api/videos', {
+                method: editingVideoId ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(videoData)
+            })
+            .then(response => response.ok ? response.json() : Promise.reject())
+            .then(() => {
+                document.getElementById('video-form').reset();
+                document.getElementById('video-published').checked = true;
+                document.getElementById('thumbnail-preview-container').style.display = 'none';
+                cancelVideoEdit();
+                loadVideos();
+            })
+            .catch(() => alert('Error saving video'));
+        }
+
+        // Handle text form submission
+        function handleTextSubmit(e) {
+            e.preventDefault();
+            
+            const textData = {
+                title: document.getElementById('text-title').value,
+                content: document.getElementById('text-content').value || '',
+                excerpt: document.getElementById('text-excerpt').value,
+                file_url: document.getElementById('text-file-url').value,
+                is_published: document.getElementById('text-published').checked,
+                order_index: parseInt(document.getElementById('text-order').value) || 0
+            };
+
+            fetch(editingTextId ? `/api/texts/${editingTextId}` : '/api/texts', {
+                method: editingTextId ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(textData)
+            })
+            .then(response => response.ok ? response.json() : Promise.reject())
+            .then(() => {
+                document.getElementById('text-form').reset();
+                document.getElementById('text-published').checked = true;
+                cancelTextEdit();
+                loadTexts();
+            })
+            .catch(() => alert('Error saving article'));
+        }
+
+        // Handle document form submission
+        async function handleDocumentSubmit(e) {
+            e.preventDefault();
+            
+            const documentData = {
+                title: document.getElementById('document-title').value,
+                description: document.getElementById('document-description').value,
+                file_url: document.getElementById('document-url').value,
+                filename: document.getElementById('document-title').value,
+                file_type: 'application/octet-stream',
+                file_size: 0,
+                is_published: document.getElementById('document-published').checked
+            };
+
+            try {
+                let response;
+                if (editingDocumentId) {
+                    response = await fetch(`/api/documents/${editingDocumentId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(documentData)
+                    });
+                } else {
+                    response = await fetch('/api/documents', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(documentData)
+                    });
+                }
+
+                if (response.ok) {
+                    document.getElementById('document-form').reset();
+                    document.getElementById('document-published').checked = true;
+                    cancelDocumentEdit();
+                    loadDocuments();
+                } else {
+                    alert('Error saving document');
+                }
+            } catch (error) {
+                console.error('Error saving document:', error);
+                alert('Error saving document');
+            }
+        }
+
+        // Cancel video edit
+        function cancelVideoEdit() {
+            editingVideoId = null;
+            document.getElementById('cancel-video-edit').classList.add('hidden');
+            document.querySelector('#video-form button[type="submit"]').innerHTML = '<i class="fas fa-plus mr-2"></i>Add Video';
+            document.getElementById('video-form').reset();
+            document.getElementById('video-published').checked = true;
+            document.getElementById('thumbnail-preview-container').style.display = 'none';
+        }
+
+        // Cancel text edit
+        function cancelTextEdit() {
+            editingTextId = null;
+            document.getElementById('cancel-text-edit').classList.add('hidden');
+            document.querySelector('#text-form button[type="submit"]').innerHTML = '<i class="fas fa-plus mr-2"></i>Add Article';
+            document.getElementById('text-form').reset();
+            document.getElementById('text-published').checked = true;
+        }
+
+        // Cancel document edit
+        function cancelDocumentEdit() {
+            editingDocumentId = null;
+            document.getElementById('cancel-document-edit').classList.add('hidden');
+            document.querySelector('#document-form button[type="submit"]').innerHTML = '<i class="fas fa-plus mr-2"></i>Add Document';
+            document.getElementById('document-form').reset();
+            document.getElementById('document-published').checked = true;
+        }
+
+        // Edit video
+        function editVideo(videoId) {
+            const video = currentVideos.find(v => v.id === videoId);
+            if (!video) return;
+
+            document.getElementById('video-title').value = video.title;
+            document.getElementById('video-description').value = video.description || '';
+            document.getElementById('video-url').value = video.video_url;
+            document.getElementById('video-thumbnail').value = video.thumbnail_url || '';
+            document.getElementById('video-published').checked = video.is_published;
+            document.getElementById('video-order').value = video.order_index;
+
+            updateThumbnailPreview();
+
+            editingVideoId = videoId;
+            document.getElementById('cancel-video-edit').classList.remove('hidden');
+            document.querySelector('#video-form button[type="submit"]').innerHTML = '<i class="fas fa-save mr-2"></i>Update Video';
+        }
+
+        // Edit text
+        function editText(textId) {
+            const text = currentTexts.find(t => t.id === textId);
+            if (!text) return;
+
+            document.getElementById('text-title').value = text.title;
+            document.getElementById('text-content').value = text.content || '';
+            document.getElementById('text-excerpt').value = text.excerpt || '';
+            document.getElementById('text-file-url').value = text.file_url || '';
+            document.getElementById('text-published').checked = text.is_published;
+            document.getElementById('text-order').value = text.order_index;
+
+            editingTextId = textId;
+            document.getElementById('cancel-text-edit').classList.remove('hidden');
+            document.querySelector('#text-form button[type="submit"]').innerHTML = '<i class="fas fa-save mr-2"></i>Update Article';
+        }
+
+        // Edit document
+        function editDocument(documentId) {
+            const document = currentDocuments.find(d => d.id === documentId);
+            if (!document) return;
+
+            document.getElementById('document-title').value = document.title;
+            document.getElementById('document-description').value = document.description || '';
+            document.getElementById('document-url').value = document.file_url;
+            document.getElementById('document-published').checked = document.is_published;
+
+            editingDocumentId = documentId;
+            document.getElementById('cancel-document-edit').classList.remove('hidden');
+            document.querySelector('#document-form button[type="submit"]').innerHTML = '<i class="fas fa-save mr-2"></i>Update Document';
+        }
+
+        // Delete video
+        async function deleteVideo(videoId) {
+            if (!confirm('Are you sure you want to delete this video?')) return;
+            try {
+                const response = await fetch(`/api/videos/${videoId}`, { method: 'DELETE' });
+                if (response.ok) loadVideos();
+                else alert('Error deleting video');
+            } catch (error) {
+                alert('Error deleting video');
+            }
+        }
+
+        // Delete text
+        async function deleteText(textId) {
+            if (!confirm('Are you sure you want to delete this article?')) return;
+            try {
+                const response = await fetch(`/api/texts/${textId}`, { method: 'DELETE' });
+                if (response.ok) loadTexts();
+                else alert('Error deleting article');
+            } catch (error) {
+                alert('Error deleting article');
+            }
+        }
+
+        // Delete document
+        async function deleteDocument(documentId) {
+            if (!confirm('Are you sure you want to delete this document?')) return;
+
+            try {
+                const response = await fetch(`/api/documents/${documentId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadDocuments();
+                } else {
+                    alert('Error deleting document');
+                }
+            } catch (error) {
+                console.error('Error deleting document:', error);
+                alert('Error deleting document');
+            }
+        }
+
+        // Delete file
+        async function deleteFile(filename) {
+            if (!confirm('Are you sure you want to delete this file?')) return;
+            try {
+                const response = await fetch(`/api/files/${filename}`, { method: 'DELETE' });
+                if (response.ok) loadFiles();
+                else alert('Error deleting file');
+            } catch (error) {
+                alert('Error deleting file');
+            }
+        }
+
+        // Copy URL to clipboard
+        function copyToClipboard(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                const button = event.target.closest('button');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+                button.classList.add('text-green-500');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('text-green-500');
+                    button.classList.add('text-blue-500');
+                }, 2000);
+            });
+        }
+
+        // Render videos list
+        function renderVideosList(videos) {
+            const videosList = document.getElementById('videos-list');
+            
+            if (videos.length === 0) {
+                videosList.innerHTML = '<p class="text-gray-500 text-center py-8">No videos added yet.</p>';
+                return;
+            }
+
+            videosList.innerHTML = videos.map(video => `
+                <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-lg">${video.title}</h3>
+                            <p class="text-gray-600 text-sm">${video.description || 'No description'}</p>
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="editVideo(${video.id})" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteVideo(${video.id})" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                        <span class="flex items-center">
+                            <i class="fas fa-sort-numeric-up mr-1"></i>
+                            Order: ${video.order_index}
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-${video.is_published ? 'eye' : 'eye-slash'} mr-1"></i>
+                            ${video.is_published ? 'Published' : 'Draft'}
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-calendar mr-1"></i>
+                            ${new Date(video.created_at).toLocaleDateString()}
+                        </span>
+                    </div>
+                    ${video.thumbnail_url ? `
+                        <div class="mt-3">
+                            <img src="${video.thumbnail_url}" class="thumbnail-preview rounded border" alt="Video thumbnail">
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Render texts list
+        function renderTextsList(texts) {
+            const textsList = document.getElementById('texts-list');
+            
+            if (texts.length === 0) {
+                textsList.innerHTML = '<p class="text-gray-500 text-center py-8">No articles added yet.</p>';
+                return;
+            }
+
+            textsList.innerHTML = texts.map(text => `
+                <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-lg">${text.title}</h3>
+                            <p class="text-gray-600 text-sm">${text.excerpt || 'No excerpt'}</p>
+                            ${text.file_url ? '<p class="text-green-600 text-xs mt-1"><i class="fas fa-file-pdf mr-1"></i>PDF attached</p>' : '<p class="text-gray-400 text-xs mt-1">Text only</p>'}
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="editText(${text.id})" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteText(${text.id})" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                        <span class="flex items-center">
+                            <i class="fas fa-sort-numeric-up mr-1"></i>
+                            Order: ${text.order_index}
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-${text.is_published ? 'eye' : 'eye-slash'} mr-1"></i>
+                            ${text.is_published ? 'Published' : 'Draft'}
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-calendar mr-1"></i>
+                            ${new Date(text.created_at).toLocaleDateString()}
+                        </span>
+                    </div>
+                    ${text.file_url ? `
+                        <div class="mt-3">
+                            <a href="${text.file_url}" target="_blank" class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 transition-colors">
+                                <i class="fas fa-external-link-alt mr-1"></i>View File
+                            </a>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Render documents list
+        function renderDocumentsList(documents) {
+            const documentsList = document.getElementById('documents-list');
+            
+            if (documents.length === 0) {
+                documentsList.innerHTML = '<p class="text-gray-500 text-center py-8">No documents added yet.</p>';
+                return;
+            }
+
+            documentsList.innerHTML = documents.map(doc => `
+                <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-lg flex items-center">
+                                <i class="${doc.icon || 'fas fa-file'} mr-2 text-blue-500"></i>
+                                ${doc.title}
+                            </h3>
+                            <p class="text-gray-600 text-sm">${doc.description || 'No description'}</p>
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="editDocument(${doc.id})" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteDocument(${doc.id})" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                        <span class="flex items-center">
+                            <i class="fas fa-download mr-1"></i>
+                            Downloads: ${doc.download_count}
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-${doc.is_published ? 'eye' : 'eye-slash'} mr-1"></i>
+                            ${doc.is_published ? 'Published' : 'Draft'}
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-calendar mr-1"></i>
+                            ${new Date(doc.created_at).toLocaleDateString()}
+                        </span>
+                    </div>
+                    <div class="mt-3 flex space-x-2">
+                        <a href="${doc.file_url}" target="_blank" class="text-sm bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200 transition-colors">
+                            <i class="fas fa-external-link-alt mr-1"></i>View File
+                        </a>
+                        <a href="/download/${doc.id}" target="_blank" class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 transition-colors">
+                            <i class="fas fa-download mr-1"></i>Download
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render files list
+        function renderFilesList(files) {
+            const filesList = document.getElementById('files-list');
+            
+            if (files.length === 0) {
+                filesList.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">No files uploaded yet.</p>';
+                return;
+            }
+
+            filesList.innerHTML = files.map(file => {
+                const isImage = file.type && file.type.startsWith('image/');
+                const isVideo = file.type && file.type.startsWith('video/');
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                
+                return `
+                    <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-semibold text-sm truncate" title="${file.name}">${file.name}</h3>
+                            <button onclick="deleteFile('${file.name}')" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        ${isImage ? `<img src="${file.url}" class="w-full h-32 object-cover rounded mb-2" alt="${file.name}">` : ''}
+                        ${isVideo ? `<video src="${file.url}" class="w-full h-32 object-cover rounded mb-2" controls></video>` : ''}
+                        <div class="text-xs text-gray-500">
+                            <p>Size: ${fileSize} MB</p>
+                            <p>Type: ${file.type || 'Unknown'}</p>
+                            <p>Created: ${new Date(file.created).toLocaleDateString()}</p>
+                        </div>
+                        <div class="mt-2">
+                            <button onclick="copyToClipboard('${file.url}')" class="text-blue-500 hover:text-blue-700 text-xs">
+                                <i class="fas fa-copy mr-1"></i>Copy URL
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
