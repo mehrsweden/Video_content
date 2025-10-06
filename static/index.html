@@ -134,22 +134,18 @@
     <script>
         // Global variables
         let currentVideos = [];
-        let currentArticles = [];
         let currentDocuments = [];
 
         // DOM elements
         const videosTab = document.getElementById('videos-tab');
-        const articlesTab = document.getElementById('articles-tab');
         const documentsTab = document.getElementById('documents-tab');
         const videosSection = document.getElementById('videos-section');
-        const articlesSection = document.getElementById('articles-section');
         const documentsSection = document.getElementById('documents-section');
         const loading = document.getElementById('loading');
         const emptyState = document.getElementById('empty-state');
         
         // Grid containers
         const videosGrid = document.getElementById('videos-grid');
-        const articlesGrid = document.getElementById('articles-grid');
         const documentsGrid = document.getElementById('documents-grid');
 
         // Modal elements
@@ -165,9 +161,7 @@
         // Setup event listeners
         function setupEventListeners() {
             videosTab.addEventListener('click', () => switchTab('videos'));
-            articlesTab.addEventListener('click', () => switchTab('articles'));
             documentsTab.addEventListener('click', () => switchTab('documents'));
-            
             closeVideoModal.addEventListener('click', () => videoModal.classList.add('hidden'));
             
             // Close modals when clicking outside
@@ -192,7 +186,7 @@
             });
             
             // Hide all sections
-            [videosSection, articlesSection, documentsSection, emptyState].forEach(s => {
+            [videosSection, documentsSection, emptyState].forEach(s => {
                 s.classList.add('hidden');
             });
             
@@ -202,12 +196,7 @@
                 videosSection.classList.remove('hidden');
                 
                 if (currentVideos.length === 0) loadVideos();
-            } else if (tab === 'articles') {
-                articlesTab.classList.add('bg-blue-500', 'text-white');
-                articlesTab.classList.remove('text-gray-600');
-                articlesSection.classList.remove('hidden');
-                
-                if (currentArticles.length === 0) loadArticles();
+
             } else if (tab === 'documents') {
                 documentsTab.classList.add('bg-blue-500', 'text-white');
                 documentsTab.classList.remove('text-gray-600');
@@ -229,21 +218,6 @@
             } catch (error) {
                 console.error('Error loading videos:', error);
                 showError('Failed to load videos');
-            }
-        }
-
-        // Load articles from API
-        async function loadArticles() {
-            try {
-                showLoading();
-                const response = await fetch('/api/texts');
-                const articles = await response.json();
-                currentArticles = articles;
-                renderArticles(articles);
-                hideLoading();
-            } catch (error) {
-                console.error('Error loading articles:', error);
-                showError('Failed to load articles');
             }
         }
 
@@ -310,38 +284,6 @@
             `).join('');
         }
         
-// Render articles - now with file_url support
-function renderArticles(articles) {
-    if (articles.length === 0) {
-        articlesGrid.innerHTML = '<div class="col-span-full text-center text-gray-500 py-12">No articles available</div>';
-        return;
-    }
-
-    articlesGrid.innerHTML = articles.map(article => {
-        // Check if article has a file_url (PDF) or just text content
-        const hasFile = article.file_url && article.file_url.trim() !== '';
-        
-        return `
-            <div class="bg-white rounded-lg shadow-lg overflow-hidden hover-scale fade-in ${hasFile ? 'cursor-pointer' : ''}" ${hasFile ? `onclick="window.open('${article.file_url}', '_blank')"` : ''}>
-                <div class="p-6">
-                    <div class="flex items-center mb-3">
-                        <i class="fas fa-file-text text-blue-500 text-2xl mr-3"></i>
-                        <h3 class="text-xl font-bold text-gray-800">${article.title}</h3>
-                    </div>
-                    <p class="text-gray-600 text-sm line-clamp-4 mb-4">${article.excerpt || article.content?.substring(0, 150) + '...' || 'No preview available'}</p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-400">${new Date(article.created_at).toLocaleDateString()}</span>
-                        ${hasFile ? 
-                            `<span class="text-blue-500 text-sm font-medium">Read More →</span>` :
-                            `<span class="text-gray-400 text-sm italic">No file available</span>`
-                        }
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
         // Render documents
         function renderDocuments(documents) {
             if (documents.length === 0) {
