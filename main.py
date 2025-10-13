@@ -315,7 +315,7 @@ def admin():
         <html>
         <head>
             <title>Admin Access Required</title>
-            <script src="https://www.google.com/recaptcha/api.js?render=YOUR_SITE_KEY"></script>
+            <script src="https://www.google.com/recaptcha/api.js?render=6Lchn-grAAAAAKy5XlO2YZpamJm4tmr7qXVlP9GL"></script>
         </head>
         <body style="text-align:center; padding:50px; font-family:Arial;">
             <h2>Admin Access Required</h2>
