@@ -248,7 +248,7 @@ def delete_file_http(filename):
 
 def verify_recaptcha(token):
     """Verify reCAPTCHA v3 token"""
-    secret_key = os.environ.get(6Lchn-grAAAAAOJd4DgUG41-Rb_w53HtvcHNxEZ-)
+   secret_key = os.environ.get('RECAPTCHA_SECRET_KEY')
     if not secret_key:
         return True  # Skip verification if not configured
     
