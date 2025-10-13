@@ -246,6 +246,29 @@ def delete_file_http(filename):
         print(f"❌ Delete error: {e}")
         return False
 
+def verify_recaptcha(token):
+    """Verify reCAPTCHA v3 token"""
+    secret_key = os.environ.get('RECAPTCHA_SECRET_KEY')
+    if not secret_key:
+        return True  # Skip verification if not configured
+    
+    try:
+        response = requests.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            data={
+                'secret': secret_key,
+                'response': token
+            }
+        )
+        result = response.json()
+        
+        # v3 returns a score from 0.0 to 1.0
+        # 1.0 is very likely a good interaction, 0.0 is very likely a bot
+        return result.get('success', False) and result.get('score', 0) >= 0.5
+    except Exception as e:
+        print(f"reCAPTCHA verification error: {e}")
+        return True  # Allow on error to avoid blocking legitimate users
+
 # Routes
 @app.route('/')
 def index():
