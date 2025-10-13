@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Content Hub</title>
+    <!-- reCAPTCHA v3 Script - REPLACE YOUR_SITE_KEY with your actual Site Key -->
+    <script src="https://www.google.com/recaptcha/api.js?render=6Lchn-grAAAAAKy5XlO2YZpamJm4tmr7qXVlP9GL"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -155,7 +157,13 @@
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             loadVideos();
-            setupEventListeners();
+            setupEventListeners();:
+            // Execute reCAPTCHA v3 on page load
+            grecaptcha.ready(function() {
+                grecaptcha.execute('YOUR_SITE_KEY', {action: 'homepage'}).then(function(token) {
+                    console.log('reCAPTCHA v3 token generated for homepage');
+                });
+            });
         });
 
         // Setup event listeners
