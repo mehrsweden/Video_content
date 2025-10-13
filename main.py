@@ -328,7 +328,7 @@ def admin():
             document.getElementById('admin-login-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 grecaptcha.ready(function() {
-                    grecaptcha.execute('YOUR_SITE_KEY', {action: 'admin_login'}).then(function(token) {
+                  grecaptcha.execute('6Lchn-grAAAAAKy5XlO2YZpamJm4tmr7qXVlP9GL', {action: 'admin_login'}).then(function(token) {
                         const form = document.getElementById('admin-login-form');
                         const tokenInput = document.createElement('input');
                         tokenInput.type = 'hidden';
