@@ -288,24 +288,59 @@ def index():
         </body>
         </html>
         '''
+        
 @app.route('/admin.html')
 def admin():
     # Check for password protection
     admin_password = request.args.get('password')
+    recaptcha_token = request.args.get('recaptcha_token')
     correct_password = os.environ.get('ADMIN_PASSWORD', 'defaultpassword')
+    
+    # Verify reCAPTCHA if token provided
+    if recaptcha_token and not verify_recaptcha(recaptcha_token):
+        return '''
+        <!DOCTYPE html>
+        <html>
+        <head><title>Bot Detected</title></head>
+        <body style="text-align:center; padding:50px; font-family:Arial;">
+            <h2>Bot Activity Detected</h2>
+            <p>Please try again.</p>
+            <a href="/admin.html">Return to Login</a>
+        </body>
+        </html>
+        '''
     
     if admin_password != correct_password:
         return '''
         <!DOCTYPE html>
         <html>
-        <head><title>Admin Access Required</title></head>
+        <head>
+            <title>Admin Access Required</title>
+            <script src="https://www.google.com/recaptcha/api.js?render=YOUR_SITE_KEY"></script>
+        </head>
         <body style="text-align:center; padding:50px; font-family:Arial;">
             <h2>Admin Access Required</h2>
-            <form method="GET">
+            <form method="GET" id="admin-login-form">
                 <input type="password" name="password" placeholder="Enter admin password" required style="padding:10px; margin:10px;">
                 <br>
                 <button type="submit" style="padding:10px 20px; margin:10px;">Access Admin Panel</button>
             </form>
+            <script>
+            document.getElementById('admin-login-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                grecaptcha.ready(function() {
+                    grecaptcha.execute('YOUR_SITE_KEY', {action: 'admin_login'}).then(function(token) {
+                        const form = document.getElementById('admin-login-form');
+                        const tokenInput = document.createElement('input');
+                        tokenInput.type = 'hidden';
+                        tokenInput.name = 'recaptcha_token';
+                        tokenInput.value = token;
+                        form.appendChild(tokenInput);
+                        form.submit();
+                    });
+                });
+            });
+            </script>
         </body>
         </html>
         '''
