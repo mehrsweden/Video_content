@@ -93,6 +93,7 @@ class Document(db.Model):
     file_type = db.Column(db.String(100))
     file_size = db.Column(db.Integer)
     category = db.Column(db.String(100), default='Miscellaneous')
+    download_count = db.Column(db.Integer, default=0)
     is_published = db.Column(db.Boolean, default=True)
     is_published = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
