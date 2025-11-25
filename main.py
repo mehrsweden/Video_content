@@ -766,6 +766,8 @@ def view_document(doc_id):
     except Exception as e:
         print(f"Error viewing document: {e}")
         return "Document not found", 404
+
+@app.route('/download/<int:doc_id>')
 def download_document(doc_id):
     """Handle document downloads and track download count"""
     try:
