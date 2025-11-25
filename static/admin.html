@@ -95,12 +95,22 @@
                     <input type="text" id="video-title" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Order Index</label>
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Video URL *</label>
                     <input type="url" id="video-url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Thumbnail URL</label>
                     <input type="url" id="video-thumbnail" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                    <select id="video-category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="Science & Technology">Science & Technology</option>
+                        <option value="Culture">Culture</option>
+                        <option value="Miscellaneous" selected>Miscellaneous</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Order Index</label>
@@ -235,6 +245,14 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">File URL *</label>
                     <input type="url" id="document-url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                    <select id="document-category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                        <option value="Science & Technology">Science & Technology</option>
+                        <option value="Culture">Culture</option>
+                        <option value="Miscellaneous" selected>Miscellaneous</option>
+                    </select>
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
@@ -679,6 +697,7 @@
                 description: document.getElementById('video-description').value,
                 video_url: document.getElementById('video-url').value,
                 thumbnail_url: document.getElementById('video-thumbnail').value,
+                category: document.getElementById('video-category').value,
                 is_published: document.getElementById('video-published').checked,
                 order_index: parseInt(document.getElementById('video-order').value) || 0
             };
@@ -692,6 +711,7 @@
             .then(() => {
                 document.getElementById('video-form').reset();
                 document.getElementById('video-published').checked = true;
+                document.getElementById('video-category').value = 'Miscellaneous';
                 document.getElementById('thumbnail-preview-container').style.display = 'none';
                 cancelVideoEdit();
                 loadVideos();
@@ -735,6 +755,7 @@
                 title: document.getElementById('document-title').value,
                 description: document.getElementById('document-description').value,
                 file_url: document.getElementById('document-url').value,
+                category: document.getElementById('document-category').value,
                 filename: document.getElementById('document-title').value,
                 file_type: 'application/octet-stream',
                 file_size: 0,
@@ -760,6 +781,7 @@
                 if (response.ok) {
                     document.getElementById('document-form').reset();
                     document.getElementById('document-published').checked = true;
+                    document.getElementById('document-category').value = 'Miscellaneous';
                     cancelDocumentEdit();
                     loadDocuments();
                 } else {
@@ -808,6 +830,7 @@
             document.getElementById('video-description').value = video.description || '';
             document.getElementById('video-url').value = video.video_url;
             document.getElementById('video-thumbnail').value = video.thumbnail_url || '';
+            document.getElementById('video-category').value = video.category || 'Miscellaneous';
             document.getElementById('video-published').checked = video.is_published;
             document.getElementById('video-order').value = video.order_index;
 
@@ -843,6 +866,7 @@
             document.getElementById('document-title').value = document.title;
             document.getElementById('document-description').value = document.description || '';
             document.getElementById('document-url').value = document.file_url;
+            document.getElementById('document-category').value = document.category || 'Miscellaneous';
             document.getElementById('document-published').checked = document.is_published;
 
             editingDocumentId = documentId;
