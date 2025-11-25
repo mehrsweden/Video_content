@@ -754,6 +754,18 @@ def public_documents():
     except Exception as e:
         return f"<h1>Error loading documents</h1><p>{str(e)}</p>"
 @app.route('/download/<int:doc_id>')
+
+@app.route('/document/<int:doc_id>')
+def view_document(doc_id):
+    """View a single document inline"""
+    try:
+        document = Document.query.get_or_404(doc_id)
+        if not document.is_published:
+            return "Document not found", 404
+        return redirect(f"{document.file_url}?inline=true")
+    except Exception as e:
+        print(f"Error viewing document: {e}")
+        return "Document not found", 404
 def download_document(doc_id):
     """Handle document downloads and track download count"""
     try:
