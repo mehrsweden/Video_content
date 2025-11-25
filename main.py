@@ -450,9 +450,7 @@ def videos():
                 'category': v.category,  # ADD THIS LINE
                 'created_at': v.created_at.isoformat()
             } for v in videos])
-   
-        
-       elif request.method == 'POST':
+        elif request.method == 'POST':
             data = request.get_json()
             video = VideoContent(
                 title=data['title'],
