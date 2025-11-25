@@ -67,6 +67,27 @@
         </div>
     </nav>
 
+    <!-- Category Filter -->
+    <div class="bg-gray-100 py-4">
+        <div class="container mx-auto px-6">
+            <div class="flex justify-center space-x-4 flex-wrap">
+                <button id="all-category" class="category-btn px-4 py-2 rounded-full font-medium transition-all duration-300 bg-purple-500 text-white">
+                    All
+                </button>
+                <button id="science-category" class="category-btn px-4 py-2 rounded-full font-medium transition-all duration-300 text-gray-600 bg-white hover:bg-purple-100">
+                    <i class="fas fa-flask mr-2"></i>Science & Technology
+                </button>
+                <button id="culture-category" class="category-btn px-4 py-2 rounded-full font-medium transition-all duration-300 text-gray-600 bg-white hover:bg-purple-100">
+                    <i class="fas fa-theater-masks mr-2"></i>Culture
+                </button>
+                <button id="miscellaneous-category" class="category-btn px-4 py-2 rounded-full font-medium transition-all duration-300 text-gray-600 bg-white hover:bg-purple-100">
+                    <i class="fas fa-star mr-2"></i>Miscellaneous
+                </button>
+            </div>
+        </div>
+    </div>
+    </div>
+
     <!-- Loading Spinner -->
     <div id="loading" class="flex justify-center items-center py-20">
         <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
@@ -135,10 +156,19 @@
         // Global variables
         let currentVideos = [];
         let currentDocuments = [];
+        let currentCategory = null;
 
         // DOM elements
         const videosTab = document.getElementById('videos-tab');
         const documentsTab = document.getElementById('documents-tab');
+        const allCategoryBtn = document.getElementById('all-category');
+        const scienceCategoryBtn = document.getElementById('science-category');
+        const cultureCategoryBtn = document.getElementById('culture-category');
+        const miscellaneousCategoryBtn = document.getElementById('miscellaneous-category');
+        const allCategoryBtn = document.getElementById('all-category');
+        const scienceCategoryBtn = document.getElementById('science-category');
+        const cultureCategoryBtn = document.getElementById('culture-category');
+        const miscellaneousCategoryBtn = document.getElementById('miscellaneous-category');
         const videosSection = document.getElementById('videos-section');
         const documentsSection = document.getElementById('documents-section');
         const loading = document.getElementById('loading');
@@ -162,6 +192,11 @@
         function setupEventListeners() {
             videosTab.addEventListener('click', () => switchTab('videos'));
             documentsTab.addEventListener('click', () => switchTab('documents'));
+            
+            allCategoryBtn.addEventListener('click', () => filterByCategory(null));
+            scienceCategoryBtn.addEventListener('click', () => filterByCategory('Science & Technology'));
+            cultureCategoryBtn.addEventListener('click', () => filterByCategory('Culture'));
+            miscellaneousCategoryBtn.addEventListener('click', () => filterByCategory('Miscellaneous'));
             closeVideoModal.addEventListener('click', () => videoModal.classList.add('hidden'));
             
             // Close modals when clicking outside
@@ -206,11 +241,44 @@
             }
         }
 
+        // Filter by category
+        function filterByCategory(category) {
+            currentCategory = category;
+            
+            // Update button styles
+            [allCategoryBtn, scienceCategoryBtn, cultureCategoryBtn, miscellaneousCategoryBtn].forEach(btn => {
+                btn.classList.remove('bg-purple-500', 'text-white');
+                btn.classList.add('text-gray-600', 'bg-white');
+            });
+            
+            if (category === null) {
+                allCategoryBtn.classList.add('bg-purple-500', 'text-white');
+                allCategoryBtn.classList.remove('text-gray-600', 'bg-white');
+            } else if (category === 'Science & Technology') {
+                scienceCategoryBtn.classList.add('bg-purple-500', 'text-white');
+                scienceCategoryBtn.classList.remove('text-gray-600', 'bg-white');
+            } else if (category === 'Culture') {
+                cultureCategoryBtn.classList.add('bg-purple-500', 'text-white');
+                cultureCategoryBtn.classList.remove('text-gray-600', 'bg-white');
+            } else if (category === 'Miscellaneous') {
+                miscellaneousCategoryBtn.classList.add('bg-purple-500', 'text-white');
+                miscellaneousCategoryBtn.classList.remove('text-gray-600', 'bg-white');
+            }
+            
+            // Reload content with filter
+            if (videosSection.classList.contains('hidden')) {
+                loadDocuments();
+            } else {
+                loadVideos();
+            }
+        }
+
         // Load videos from API
         async function loadVideos() {
             try {
                 showLoading();
-                const response = await fetch('/api/videos');
+                const url = currentCategory ? `/api/videos?category=${encodeURIComponent(currentCategory)}` : '/api/videos';
+                const response = await fetch(url);
                 const videos = await response.json();
                 currentVideos = videos;
                 renderVideos(videos);
@@ -225,7 +293,8 @@
         async function loadDocuments() {
             try {
                 showLoading();
-                const response = await fetch('/api/documents');
+                const url = currentCategory ? `/api/documents?category=${encodeURIComponent(currentCategory)}` : '/api/documents';
+                const response = await fetch(url);
                 const documents = await response.json();
                 currentDocuments = documents;
                 renderDocuments(documents);
