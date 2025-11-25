@@ -669,6 +669,7 @@ def admin_documents():
             'description': d.description,
             'file_url': d.file_url,
             'filename': d.filename,
+            'category': d.category,
             'file_type': d.file_type,
             'file_size': d.file_size,
             'is_published': d.is_published,
