@@ -436,28 +436,36 @@ def process_pdf_article():
 def videos():
     try:
         if request.method == 'GET':
-            videos = VideoContent.query.filter_by(is_published=True).order_by(VideoContent.order_index.desc()).all()
+            category = request.args.get('category')  # ADD THIS LINE
+            if category:  # ADD THIS BLOCK
+                videos = VideoContent.query.filter_by(is_published=True, category=category).order_by(VideoContent.order_index.desc()).all()
+            else:
+                videos = VideoContent.query.filter_by(is_published=True).order_by(VideoContent.order_index.desc()).all()
             return jsonify([{
                 'id': v.id,
                 'title': v.title,
                 'description': v.description,
                 'video_url': v.video_url,
                 'thumbnail_url': v.thumbnail_url,
+                'category': v.category,  # ADD THIS LINE
                 'created_at': v.created_at.isoformat()
             } for v in videos])
+   
         
-        elif request.method == 'POST':
+       elif request.method == 'POST':
             data = request.get_json()
             video = VideoContent(
                 title=data['title'],
                 description=data.get('description'),
                 video_url=data['video_url'],
                 thumbnail_url=data.get('thumbnail_url'),
+                category=data.get('category', 'Miscellaneous'),  # ADD THIS LINE
                 is_published=data.get('is_published', True),
                 order_index=data.get('order_index', 0)
             )
             db.session.add(video)
             db.session.commit()
+            return jsonify({'message': 'Video created successfully'}), 201
             return jsonify({'message': 'Video created successfully'}), 201
     except Exception as e:
         print(f"❌ Videos API error: {e}")
@@ -613,23 +621,27 @@ def not_found(e):
 @app.errorhandler(500)
 def server_error(e):
     return jsonify({'error': 'Internal server error'}), 500
-
 @app.route('/api/documents', methods=['GET', 'POST'])
 def documents_api():
     try:
         if request.method == 'GET':
-            documents = Document.query.filter_by(is_published=True).order_by(Document.created_at.desc()).all()
+            category = request.args.get('category')  # ADD THIS
+            if category:  # ADD THIS BLOCK
+                documents = Document.query.filter_by(is_published=True, category=category).order_by(Document.created_at.desc()).all()
+            else:
+                documents = Document.query.filter_by(is_published=True).order_by(Document.created_at.desc()).all()
             return jsonify([{
                 'id': d.id,
                 'title': d.title,
                 'description': d.description,
                 'file_url': d.file_url,
                 'filename': d.filename,
+                'category': d.category,  # ADD THIS LINE
                 'download_count': d.download_count,
                 'created_at': d.created_at.isoformat()
             } for d in documents])
         
-        elif request.method == 'POST':
+       elif request.method == 'POST':
             data = request.get_json()
             document = Document(
                 title=data['title'],
@@ -638,6 +650,7 @@ def documents_api():
                 filename=data.get('filename', data['title']),
                 file_type=data.get('file_type'),
                 file_size=data.get('file_size'),
+                category=data.get('category', 'Miscellaneous'),  # ADD THIS LINE
                 is_published=data.get('is_published', True)
             )
             db.session.add(document)
