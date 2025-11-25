@@ -639,7 +639,7 @@ def documents_api():
                 'created_at': d.created_at.isoformat()
             } for d in documents])
         
-       elif request.method == 'POST':
+        elif request.method == 'POST':
             data = request.get_json()
             document = Document(
                 title=data['title'],
