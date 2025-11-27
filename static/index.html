@@ -359,6 +359,7 @@
             documentsGrid.innerHTML = documents.map(doc => {
                 const fileSize = doc.file_size ? (doc.file_size / (1024 * 1024)).toFixed(1) + ' MB' : 'Unknown size';
                 const icon = getFileIcon(doc.file_type);
+                const viewUrl = (doc.filename && (doc.filename.toLowerCase().endsWith('.html') || doc.filename.toLowerCase().endsWith('.htm'))) ? doc.file_url : `https://docs.google.com/viewer?url=${encodeURIComponent(doc.file_url)}&embedded=true`;
                 
                 return `
                     <div class="bg-white rounded-lg shadow-lg overflow-hidden hover-scale fade-in">
@@ -374,7 +375,7 @@
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-xs text-gray-400">${new Date(doc.created_at).toLocaleDateString()}</span>
-                                <a href="https://docs.google.com/viewer?url=${encodeURIComponent(doc.file_url)}&embedded=true" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors">Read More</a>
+                                <a href="${viewUrl}" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors">Read More</a>
                             </div>
                         </div>
                     </div>
