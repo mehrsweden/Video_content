@@ -762,7 +762,32 @@ def view_document(doc_id):
         document = Document.query.get_or_404(doc_id)
         if not document.is_published:
             return "Document not found", 404
-        return redirect(f"{document.file_url}?inline=true")
+        
+        # Fetch the file from Supabase
+        import requests
+        response = requests.get(document.file_url)
+        
+        if response.status_code != 200:
+            return "Document not available", 404
+        
+        # Determine content type based on file extension
+        filename = document.filename.lower()
+        if filename.endswith('.html') or filename.endswith('.htm'):
+            content_type = 'text/html'
+        elif filename.endswith('.pdf'):
+            content_type = 'application/pdf'
+        else:
+            content_type = response.headers.get('content-type', 'application/octet-stream')
+        
+        # Return with inline disposition
+        from flask import Response
+        return Response(
+            response.content,
+            mimetype=content_type,
+            headers={
+                'Content-Disposition': f'inline; filename="{document.filename}"'
+            }
+        )
     except Exception as e:
         print(f"Error viewing document: {e}")
         return "Document not found", 404

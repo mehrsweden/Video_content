@@ -359,7 +359,7 @@
             documentsGrid.innerHTML = documents.map(doc => {
                 const fileSize = doc.file_size ? (doc.file_size / (1024 * 1024)).toFixed(1) + ' MB' : 'Unknown size';
                 const icon = getFileIcon(doc.file_type);
-                const viewUrl = (doc.filename && (doc.filename.toLowerCase().endsWith('.html') || doc.filename.toLowerCase().endsWith('.htm'))) ? doc.file_url : `https://docs.google.com/viewer?url=${encodeURIComponent(doc.file_url)}&embedded=true`;
+                const viewUrl = (doc.filename && (doc.filename.toLowerCase().endsWith('.html') || doc.filename.toLowerCase().endsWith('.htm'))) ? `/document/${doc.id}` : `https://docs.google.com/viewer?url=${encodeURIComponent(doc.file_url)}&embedded=true`;
                 
                 return `
                     <div class="bg-white rounded-lg shadow-lg overflow-hidden hover-scale fade-in">
