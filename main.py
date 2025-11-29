@@ -5,7 +5,7 @@ import tempfile
 import requests
 import json
 from datetime import datetime
-from flask import Flask, request, jsonify, send_from_directory, redirect
+from flask import Flask, request, jsonify, send_from_directory, redirect, Response
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 
@@ -780,7 +780,6 @@ def view_document(doc_id):
             content_type = response.headers.get('content-type', 'application/octet-stream')
         
         # Return with inline disposition
-        from flask import Response
         return Response(
             response.content,
             mimetype=content_type,
